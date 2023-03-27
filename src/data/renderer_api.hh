@@ -1,4 +1,4 @@
-
+#pragma once
 
 typedef void (*loaded_proc)(void);
 typedef loaded_proc (*load_proc)(const char *);
@@ -13,5 +13,3 @@ struct renderer_api {
   renderer_set_viewport_fun set_viewport;
   renderer_clear_fun clear;
 };
-
-typedef renderer_api (*renderer_fetch_api_fun)();

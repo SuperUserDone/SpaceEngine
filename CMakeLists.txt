@@ -14,10 +14,12 @@ include_directories(src)
 
 add_library(space_common SHARED src/common/memory_arena.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
+add_library(space_code SHARED src/code/code.cc)
 add_executable(space WIN32 src/win32/win32_space.cc)
 
 target_compile_definitions(space_common PRIVATE EXPORT_WIN)
 target_compile_definitions(space_opengl PRIVATE EXPORT_WIN)
+target_compile_definitions(space_code PRIVATE EXPORT_WIN)
 
 find_package(glm CONFIG REQUIRED)
 
@@ -29,6 +31,7 @@ target_link_libraries(space
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 
-add_dependencies(space space_opengl space_common)
+add_dependencies(space space_opengl space_common space_code)
 
 set_target_properties(space_opengl PROPERTIES PDB_NAME "space_opengl_%random%")
+set_target_properties(space_code PROPERTIES PDB_NAME "space_code_%random%")

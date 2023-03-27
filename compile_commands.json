@@ -11,6 +11,11 @@
 },
 {
   "directory": "C:/Code/SpaceEngine/build",
+  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DEXPORT_WIN -Dspace_code_EXPORTS -IC:/Code/SpaceEngine/src -g -Xclang -gcodeview -O0 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\space_code.dir\\src\\code\\code.cc.obj -c C:\\Code\\SpaceEngine\\src\\code\\code.cc",
+  "file": "C:\\Code\\SpaceEngine\\src\\code\\code.cc"
+},
+{
+  "directory": "C:/Code/SpaceEngine/build",
   "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -IC:/Code/SpaceEngine/src -isystem C:/Code/SpaceEngine/build/vcpkg_installed/x64-windows/include -isystem C:/Code/SpaceEngine/build/vcpkg_installed/x64-windows/include/SDL2 -g -Xclang -gcodeview -O0 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\space.dir\\src\\win32\\win32_space.cc.obj -c C:\\Code\\SpaceEngine\\src\\win32\\win32_space.cc",
   "file": "C:\\Code\\SpaceEngine\\src\\win32\\win32_space.cc"
 }

@@ -1,3 +1,4 @@
+#include "data/app_state.hh"
 #include "data/renderer_api.hh"
 
 #include "common/win32_export.hh"
@@ -6,8 +7,6 @@
 
 bool renderer_init(load_proc proc) {
   gladLoadGL(proc);
-
-  const unsigned char *name = glGetString(GL_VENDOR);
   return true;
 }
 
@@ -25,14 +24,10 @@ bool renderer_shutdown() {
 }
 
 extern "C" {
-APIFUNC renderer_api fetch_api() {
-  renderer_api api;
-
-  api.init = renderer_init;
-  api.shutdown = renderer_shutdown;
-  api.set_viewport = renderer_set_viewport;
-  api.clear = renderer_clear;
-
-  return api;
+APIFUNC void fetch_api(app_state *state) {
+  state->api.renderer.init = renderer_init;
+  state->api.renderer.shutdown = renderer_shutdown;
+  state->api.renderer.set_viewport = renderer_set_viewport;
+  state->api.renderer.clear = renderer_clear;
 }
 }
