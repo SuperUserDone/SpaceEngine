@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "win32_export.hh"
@@ -47,6 +48,8 @@ static inline void *arena_push(mem_arena &arena, size_t size) {
 
   void *base = (void *)((size_t)arena.base + arena.size);
 
+  printf("Arena Alloc: %zu\n", size);
+
   arena.size += size;
 
   return base;
@@ -69,12 +72,14 @@ static inline void arena_pop(mem_arena &arena, size_t size) {
     size = new_size;
   }
 
+  printf("Arena free : %zu\n", size);
   arena.size -= size;
 }
 
 static inline void arena_pop(mem_arena &arena, void *address) {
   size_t size = (size_t)address - (size_t)arena.base;
 
+  printf("Arena free to: %zu\n", size);
   arena.size = size;
 }
 

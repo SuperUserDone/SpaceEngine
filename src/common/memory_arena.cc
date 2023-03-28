@@ -13,7 +13,6 @@ mem_arena arena_create(size_t max_size) {
   if (max_size == 0)
     max_size = max_arena_size_default;
 
-  a.max_size = max_size;
   a.alignment = 1;
   a.base = nullptr;
   a.size = 0;
@@ -27,6 +26,9 @@ mem_arena arena_create(size_t max_size) {
       page_size = 4096;
   }
 
+  max_size = ((max_size + page_size - 1) / page_size) * page_size;
+
+  a.max_size = max_size;
   a.allocated_size = page_size;
   a.base = VirtualAlloc(nullptr, a.max_size, MEM_RESERVE, PAGE_READWRITE);
 
@@ -34,13 +36,13 @@ mem_arena arena_create(size_t max_size) {
     // TODO Error
   }
 
-  arena_grow(a, 32 * page_size);
+  arena_grow(a, max_size);
 
   return a;
 }
 
 void arena_grow(mem_arena &arena, size_t min_size) {
-  size_t alloc = ((min_size / page_size) + 1) * (page_size);
+  size_t alloc = ((min_size + page_size - 1) / page_size) * (page_size);
   if (alloc >= arena.max_size) {
     // TODO Error
   }
