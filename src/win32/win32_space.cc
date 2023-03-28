@@ -9,6 +9,8 @@
 
 static char module_name[MAX_PATH];
 
+static mem_arena init_scratch;
+
 void hotreload_renderer(app_state *state);
 void hotreload_code(app_state *state);
 
@@ -20,9 +22,10 @@ void run_game_loop(mem_arena &arena, app_state *state) {
 
   state->api.game.init(arena, state);
 
-  if (!state->api.renderer.init((load_proc)SDL_GL_GetProcAddress)) {
+  if (!state->api.renderer.init(init_scratch, state, (load_proc)SDL_GL_GetProcAddress)) {
     // TODO Error
   } else {
+    arena_clear(init_scratch);
     while (state->running) {
       arena_clear(frame_arena);
 
@@ -110,9 +113,9 @@ void copy_dll(char *new_name, const char *dll) {
 #ifndef NDEBUG
   strcpy_s(new_name, MAX_PATH, module_name);
   strcat_s(new_name, MAX_PATH, dll);
-  strcat_s(new_name, MAX_PATH, "-hot-reload");
-  strcat_s(new_name, MAX_PATH, ".dll");
+  strcat_s(new_name, MAX_PATH, "-hot-reload.dll");
 
+  DeleteFile(new_name);
   CopyFile(name, new_name, false);
 #else
   strcpy_s(new_name, MAX_PATH, name);
@@ -125,14 +128,15 @@ void load_code(app_state *state) {
 
   copy_dll(new_name, "space_code");
 
-  ws->renderer = LoadLibrary(TEXT(new_name));
+  ws->code = nullptr;
+  ws->code = LoadLibrary(TEXT(new_name));
 
-  ((fetch_api_fun)GetProcAddress(ws->renderer, "fetch_api"))(state);
+  ((fetch_api_fun)GetProcAddress(ws->code, "fetch_api"))(state);
 }
 
 void free_code(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
-  FreeLibrary(ws->renderer);
+  FreeLibrary(ws->code);
 }
 
 void hotreload_code(app_state *state) {
@@ -163,11 +167,14 @@ void hotreload_renderer(app_state *state) {
   free_renderer(state);
   load_renderer(state);
 
-  state->api.renderer.init((load_proc)SDL_GL_GetProcAddress);
+  state->api.renderer.init(init_scratch, state, (load_proc)SDL_GL_GetProcAddress);
+  arena_clear(init_scratch);
 }
 
 int main(int argc, char *argv[]) {
   mem_arena main_arena = arena_create();
+
+  init_scratch = arena_create(4096 * 1024 * 32);
 
   app_state *state = PushStruct(main_arena, app_state);
   state->platform_state = PushStruct(main_arena, win32_state);
@@ -181,6 +188,8 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+
+  GetCurrentDirectory(260, state->working_dir);
 
   init_sdl();
   create_window(main_arena, state);

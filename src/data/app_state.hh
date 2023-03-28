@@ -4,13 +4,14 @@
 #include "data/game_api.hh"
 #include "game_state.hh"
 #include "renderer_api.hh"
-#include "renderer_state.hh"
 
 struct app_state {
   game_state game;
-  renderer_state renderer;
 
+  void *renderer_state;
   void *platform_state;
+
+  char working_dir[260];
 
   bool running;
 

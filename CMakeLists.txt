@@ -31,6 +31,9 @@ target_link_libraries(space
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 
+target_link_libraries(space_code PRIVATE space_common)
+target_link_libraries(space_opengl PRIVATE space_common)
+
 add_dependencies(space space_opengl space_common space_code)
 
 set_target_properties(space_opengl PROPERTIES PDB_NAME "space_opengl_%random%")

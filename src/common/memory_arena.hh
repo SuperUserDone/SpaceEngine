@@ -6,6 +6,7 @@
 #include "win32_export.hh"
 #define PushStruct(arena, struct) (struct *)arena_push(arena, sizeof(struct));
 #define PopStuct(arena, struct) arena_pop(arena, sizeof(struct));
+#define PushArray(arena, type, len) (type *)arena_push(arena, sizeof(type) * len);
 
 struct mem_arena {
   void *base;

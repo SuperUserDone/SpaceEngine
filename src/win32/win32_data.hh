@@ -8,4 +8,5 @@ struct win32_state {
   SDL_GLContext glcontext;
 
   HINSTANCE renderer;
+  HINSTANCE code;
 };
