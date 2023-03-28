@@ -21,12 +21,9 @@ target_compile_definitions(space_common PRIVATE EXPORT_WIN)
 target_compile_definitions(space_opengl PRIVATE EXPORT_WIN)
 target_compile_definitions(space_code PRIVATE EXPORT_WIN)
 
-find_package(glm CONFIG REQUIRED)
-
 target_link_libraries(space
     PRIVATE
     space_common
-    glm::glm
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
