@@ -82,6 +82,9 @@ static inline uint32_t compile_shader(mem_arena &arena, const char *name, app_st
     }
   }
 
+  arena_pop(arena, fragment_data);
+  arena_pop(arena, vertex_data);
+
   // Shaders no longer needed, so delete them
   {
     glDeleteShader(vertex);
