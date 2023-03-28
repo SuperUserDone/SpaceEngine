@@ -38,13 +38,7 @@ static inline void *arena_push(mem_arena &arena, size_t size) {
     arena_grow(arena, arena.size + size);
   }
 
-  if (arena.alignment != 1) {
-    size_t new_size = (size / arena.alignment) * arena.alignment;
-    if (new_size < size) {
-      new_size += arena.alignment;
-    }
-    size = new_size;
-  }
+  size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   void *base = (void *)((size_t)arena.base + arena.size);
 
@@ -64,13 +58,7 @@ static inline void *arena_push_zero(mem_arena &arena, size_t size) {
 }
 
 static inline void arena_pop(mem_arena &arena, size_t size) {
-  if (arena.alignment != 1) {
-    size_t new_size = (size / arena.alignment) * arena.alignment;
-    if (new_size < size) {
-      new_size += arena.alignment;
-    }
-    size = new_size;
-  }
+  size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   printf("Arena free : %zu\n", size);
   arena.size -= size;
