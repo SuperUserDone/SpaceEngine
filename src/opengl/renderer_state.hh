@@ -1,13 +1,14 @@
 #pragma once
 
-#include "data/renderer_api.hh"
-
-#include <stdint.h>
+#include "common/memory_pool.hh"
+struct internal_mesh {
+  uint32_t vb;
+  uint32_t ib;
+  uint32_t vao;
+};
 
 struct renderer_state {
-  uint32_t shaders[mesh_render_material_type::COUNT];
-
-  struct {
-    uint32_t color_pos;
-  } opaque_shader_data;
+  mem_pool<internal_mesh> internal_mesh_data;
 };
+
+extern renderer_state* rstate;

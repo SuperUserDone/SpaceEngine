@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "common/debug.hh"
 #include "common/memory_arena.hh"
 #include "data/app_state.hh"
 #include "win32/win32_data.hh"
@@ -11,66 +12,67 @@ static char module_name[MAX_PATH];
 
 static mem_arena init_scratch;
 
+void win32_err(const char *err) {
+  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR!", err, nullptr);
+  exit(-1);
+}
+
 void hotreload_renderer(app_state *state);
 void hotreload_code(app_state *state);
 
-void run_game_loop(mem_arena &arena, app_state *state) {
-  mem_arena frame_arena = arena_create();
-
+void run_game_loop(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
   state->running = true;
 
-  state->api.game.init(arena, state);
+  state->api.game.init(state);
 
-  if (!state->api.renderer.init(init_scratch, state, (load_proc)SDL_GL_GetProcAddress)) {
-    // TODO Error
-  } else {
-    arena_clear(init_scratch);
-    while (state->running) {
-      arena_clear(frame_arena);
+  SPACE_ASSERT(state->api.renderer.init(init_scratch, state, (load_proc)SDL_GL_GetProcAddress),
+               "Failed to load renderer!");
+  arena_clear(init_scratch);
+  while (state->running) {
+    arena_clear(state->frame_arena);
 
-      SDL_Event e;
-      while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) {
-          state->running = false;
-        }
-        if (e.type == SDL_KEYUP) {
-          if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
-            // check if buildscript exists
-            if (!(INVALID_FILE_ATTRIBUTES == GetFileAttributes("build-dlls.bat") &&
-                  GetLastError() == ERROR_FILE_NOT_FOUND)) {
-              PROCESS_INFORMATION info;
-              STARTUPINFO start_info;
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+      if (e.type == SDL_QUIT) {
+        state->running = false;
+      }
+      if (e.type == SDL_KEYUP) {
+        if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
+          // check if buildscript exists
+          if (!(INVALID_FILE_ATTRIBUTES == GetFileAttributes("build-dlls.bat") &&
+                GetLastError() == ERROR_FILE_NOT_FOUND)) {
+            PROCESS_INFORMATION info;
+            STARTUPINFO start_info;
 
-              ZeroMemory(&start_info, sizeof(STARTUPINFO));
-              start_info.cb = sizeof(start_info);
-              ZeroMemory(&info, sizeof(PROCESS_INFORMATION));
-              // TODO Display the output of this on the window using pipes
+            ZeroMemory(&start_info, sizeof(STARTUPINFO));
+            start_info.cb = sizeof(start_info);
+            ZeroMemory(&info, sizeof(PROCESS_INFORMATION));
+            // TODO Display the output of this on the window using pipes
 
-              // Run the build script
-              char args[] = "/c build-dlls.bat";
-              CreateProcess(TEXT("C:\\Windows\\System32\\cmd.exe"),
-                            TEXT(args),
-                            nullptr,
-                            nullptr,
-                            false,
-                            NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,
-                            nullptr,
-                            nullptr,
-                            &start_info,
-                            &info);
+            // Run the build script
+            char args[] = "/c build-dlls.bat";
+            CreateProcess(TEXT("C:\\Windows\\System32\\cmd.exe"),
+                          TEXT(args),
+                          nullptr,
+                          nullptr,
+                          false,
+                          NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,
+                          nullptr,
+                          nullptr,
+                          &start_info,
+                          &info);
 
-              // Wait until child process exits.
-              WaitForSingleObject(info.hProcess, INFINITE);
+            // Wait until child process exits.
+            WaitForSingleObject(info.hProcess, INFINITE);
 
-              // Close process and thread handles.
-              CloseHandle(info.hProcess);
-              CloseHandle(info.hThread);
-            }
-
-            hotreload_renderer(state);
-            hotreload_code(state);
+            // Close process and thread handles.
+            CloseHandle(info.hProcess);
+            CloseHandle(info.hThread);
           }
+
+          hotreload_renderer(state);
+          hotreload_code(state);
         }
       }
 
@@ -78,13 +80,11 @@ void run_game_loop(mem_arena &arena, app_state *state) {
       SDL_GetWindowSizeInPixels(ws->window, &sizex, &sizey);
       state->api.renderer.clear(1, 1, 1, 1);
 
-      state->api.game.update(arena, frame_arena, state);
+      state->api.game.update(state);
 
       SDL_GL_SwapWindow(ws->window);
     }
   }
-
-  arena_free(frame_arena);
 }
 
 void init_sdl() {
@@ -96,10 +96,14 @@ void init_sdl() {
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 }
 
-void create_window(mem_arena &arena, app_state *state) {
+void create_window(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
-  ws->window = SDL_CreateWindow(
-      "Space Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL);
+  ws->window = SDL_CreateWindow("Space Game",
+                                SDL_WINDOWPOS_UNDEFINED,
+                                SDL_WINDOWPOS_UNDEFINED,
+                                800,
+                                600,
+                                SDL_WINDOW_OPENGL);
   ws->glcontext = SDL_GL_CreateContext(ws->window);
 }
 
@@ -172,12 +176,13 @@ void hotreload_renderer(app_state *state) {
 }
 
 int main(int argc, char *argv[]) {
-  mem_arena main_arena = arena_create();
+  platform_err = win32_err;
 
-  init_scratch = arena_create(4096 * 1024 * 32);
-
-  app_state *state = PushStruct(main_arena, app_state);
-  state->platform_state = PushStruct(main_arena, win32_state);
+  app_state state;
+  state.permanent_arena = arena_create();
+  state.platform_state = arena_push_struct(state.permanent_arena, win32_state);
+  state.frame_arena = arena_create();
+  state.renderer_state = nullptr;
 
   GetModuleFileName(nullptr, module_name, MAX_PATH);
   size_t len = strlen(module_name);
@@ -189,17 +194,16 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  GetCurrentDirectory(260, state->working_dir);
+  GetCurrentDirectory(260, state.working_dir);
 
   init_sdl();
-  create_window(main_arena, state);
-  load_renderer(state);
-  load_code(state);
+  create_window(&state);
+  load_renderer(&state);
+  load_code(&state);
 
-  run_game_loop(main_arena, state);
+  run_game_loop(&state);
 
-  free_renderer(state);
-  arena_free(main_arena);
+  free_renderer(&state);
   SDL_Quit();
 
   return 0;

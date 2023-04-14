@@ -1,5 +1,6 @@
 #pragma once
 
+#include "asset_storage.hh"
 #include "common/memory_arena.hh"
 #include "data/game_api.hh"
 #include "game_state.hh"
@@ -7,6 +8,10 @@
 
 struct app_state {
   game_state game;
+  asset_storage assets;
+
+  mem_arena permanent_arena;
+  mem_arena frame_arena;
 
   void *renderer_state;
   void *platform_state;

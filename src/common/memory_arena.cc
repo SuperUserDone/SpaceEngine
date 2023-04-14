@@ -32,9 +32,7 @@ mem_arena arena_create(size_t max_size) {
   a.allocated_size = page_size;
   a.base = VirtualAlloc(nullptr, a.max_size, MEM_RESERVE, PAGE_READWRITE);
 
-  if (!a.base) {
-    // TODO Error
-  }
+  SPACE_ASSERT(a.base, "Could not allocate space for arena!");
 
   arena_grow(a, max_size);
 
@@ -43,20 +41,15 @@ mem_arena arena_create(size_t max_size) {
 
 void arena_grow(mem_arena &arena, size_t min_size) {
   size_t alloc = ((min_size + page_size - 1) / page_size) * (page_size);
-  if (alloc >= arena.max_size) {
-    // TODO Error
-  }
+
+  SPACE_ASSERT(alloc <= arena.max_size, "Tried to grow arena beyond its capacity!");
 
   void *a = VirtualAlloc(arena.base, alloc, MEM_COMMIT, PAGE_READWRITE);
-  if (!a) {
-    // TODO Error
-  }
+  SPACE_ASSERT(a, "Failed to commit arena memory!")
 }
 
 void arena_free(mem_arena &arena) {
-  if (!VirtualFree(arena.base, arena.max_size, MEM_FREE)) {
-    // TODO Error
-  }
+  SPACE_ASSERT(VirtualFree(arena.base, 0, MEM_RELEASE), "Failed to free arena memory!");
 
   arena.base = nullptr;
   arena.size = 0;

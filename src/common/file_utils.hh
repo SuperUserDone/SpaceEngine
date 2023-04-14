@@ -14,7 +14,7 @@ static inline char *load_file(mem_arena &arena, const char *path) {
   len = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  char *buf = PushArray(arena, char, len + 1);
+  char *buf = arena_push_array(arena, char, len + 1);
   fread(buf, 1, len, fp);
   buf[len] = 0;
 

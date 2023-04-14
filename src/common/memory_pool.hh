@@ -18,9 +18,9 @@ struct mem_pool {
 };
 
 template <typename T>
-static inline mem_pool<T> pool_create(size_t max_size) {
+static inline mem_pool<T> pool_create(size_t max_elements) {
   mem_pool<T> m;
-  m.arena = arena_create(max_size);
+  m.arena = arena_create(max_elements * sizeof(T));
   m.obj_size = max(sizeof(T), sizeof(free_block));
   m.first_free = nullptr;
   return m;
@@ -38,8 +38,25 @@ static inline T *pool_alloc(mem_pool<T> &pool) {
 }
 
 template <typename T>
-static inline void pool_free(mem_pool<T> &pool, T *addr) {
+static inline void pool_pop(mem_pool<T> &pool, T *addr) {
   void *old_free = pool.first_free;
   ((free_block *)addr)->next = (free_block *)old_free;
   pool.first_free = (free_block *)addr;
+}
+
+template <typename T>
+static inline T *pool_get_at_index(mem_pool<T> &pool, size_t index) {
+  return ((T *)pool.arena.base) + index;
+}
+
+template <typename T>
+static inline void pool_free(mem_pool<T> &pool) {
+  arena_free(pool.arena);
+}
+
+template <typename T>
+static inline size_t pool_get_index(mem_pool<T> &pool, T *addr) {
+  size_t offset = (size_t)addr - (size_t)pool.arena.base;
+
+  return offset / pool.obj_size;
 }

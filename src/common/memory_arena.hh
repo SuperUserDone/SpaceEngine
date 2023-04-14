@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common/debug.hh"
 #include "win32_export.hh"
-#define PushStruct(arena, struct) (struct *)arena_push(arena, sizeof(struct));
-#define PopStuct(arena, struct) arena_pop(arena, sizeof(struct));
-#define PushArray(arena, type, len) (type *)arena_push(arena, sizeof(type) * len);
+
+#define arena_push_struct(arena, struct) (struct *)arena_push_zero(arena, sizeof(struct));
+#define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct));
+#define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * len);
 
 struct mem_arena {
   void *base;
@@ -22,13 +24,9 @@ APIFUNC extern void arena_grow(mem_arena &arena, size_t min_size);
 APIFUNC extern void arena_free(mem_arena &arena);
 
 static inline void arena_set_alignment(mem_arena &a, size_t alignment) {
-  if (alignment == 0) {
-    // TODO error
-  }
+  SPACE_ASSERT(alignment > 0, "Arena alignment must not be 0!");
 
-  if (a.size >= 0) {
-    // TODO error
-  }
+  SPACE_ASSERT(a.size < 0, "Arena alignment cannot be set after creating!");
 
   a.alignment = alignment;
 }
@@ -41,8 +39,6 @@ static inline void *arena_push(mem_arena &arena, size_t size) {
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   void *base = (void *)((size_t)arena.base + arena.size);
-
-  printf("Arena Alloc: %zu\n", size);
 
   arena.size += size;
 
@@ -60,14 +56,12 @@ static inline void *arena_push_zero(mem_arena &arena, size_t size) {
 static inline void arena_pop(mem_arena &arena, size_t size) {
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
-  printf("Arena free : %zu\n", size);
   arena.size -= size;
 }
 
-static inline void arena_pop(mem_arena &arena, void *address) {
+static inline void arena_pop_to(mem_arena &arena, void *address) {
   size_t size = (size_t)address - (size_t)arena.base;
 
-  printf("Arena free to: %zu\n", size);
   arena.size = size;
 }
 

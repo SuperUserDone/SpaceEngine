@@ -1,0 +1,18 @@
+# To all who enters here: 
+# The parser for this filetype is very dumb, I wrote it in less than 2 hours. It does a small amount of checking, but does not fail when it should.
+
+# ===================== PIPELINES ====================
+
+pipeline opaque_color {
+  vert "shaders/opaque_color.vert.glsl";
+  frag "shaders/opaque_color.frag.glsl";
+
+  uniforms { 
+    vec3 color;
+  };
+};
+
+# ====================== ATLASES ===================== 
+
+
+# ====================== TEXTURES ====================
