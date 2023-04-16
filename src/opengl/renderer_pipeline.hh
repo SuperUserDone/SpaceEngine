@@ -1,11 +1,14 @@
-#pragma once 
+#pragma once
 
 #include "common/memory_arena.hh"
 #include "data/app_state.hh"
-#include "glad/gl.h"
 #include "data/asset_types.hh"
+#include "glad/gl.h"
+#include "opengl/renderer_state.hh"
+#include "tracy/Tracy.hpp"
 
 static inline renderer_pipeline create_pipeline(pipeline_data *data) {
+  ZoneScopedN("Create Pipeline");
   GLuint vertex, fragment, program;
 
   // Create shaders & program
@@ -17,6 +20,7 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
   // Compile shaders
   {
+    ZoneScopedN("Compile Shaders");
     glShaderSource(vertex, 1, &data->vertex_shader, nullptr);
     glShaderSource(fragment, 1, &data->fragment_shader, nullptr);
 
@@ -42,6 +46,7 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
   // Link Program
   {
+    ZoneScopedN("Link Shaders");
     glAttachShader(program, vertex);
     glAttachShader(program, fragment);
 
@@ -52,11 +57,21 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
     if (!success) {
       glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-      
+
       SPACE_ASSERT(false, "Shader Link failed %s", infoLog);
     }
   }
 
+  renderer_pipeline out;
+  out.index = program;
+
+  // Get uniforms
+  {
+    out.uniform_indicies = arena_push_array(rstate->perm_data, size_t, data->uniform_count);
+    for (int i = 0; i < data->uniform_count; i++) {
+      out.uniform_indicies[i] = glGetUniformLocation(program, data->uniform_names[i]);
+    }
+  }
 
   // Shaders no longer needed, so delete them
   {
@@ -64,11 +79,10 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
     glDeleteShader(fragment);
   }
 
-  return renderer_pipeline{program};
+  return out;
 }
 
-static inline void delete_pipeline(renderer_pipeline pipeline){
+static inline void delete_pipeline(renderer_pipeline pipeline) {
+  ZoneScopedN("Delete Pipeline");
   glDeleteProgram(pipeline.index);
 }
-
-

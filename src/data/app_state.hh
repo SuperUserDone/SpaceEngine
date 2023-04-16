@@ -21,6 +21,16 @@ struct app_state {
   bool running;
 
   struct {
+    int w;
+    int h;
+  } window_area;
+
+  struct {
+    double t;
+    double dt;
+  } time;
+
+  struct {
     renderer_api renderer;
     game_api game;
   } api;

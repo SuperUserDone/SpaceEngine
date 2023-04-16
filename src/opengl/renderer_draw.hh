@@ -5,12 +5,15 @@
 #include "data/renderer_api.hh"
 #include "opengl/renderer_state.hh"
 #include "renderer_pipeline.hh"
+#include "tracy/Tracy.hpp"
 
 inline static void bind_pipeline(renderer_pipeline *pipeline) {
+  ZoneScopedN("GPU Bind Pipeline");
   glUseProgram(pipeline->index);
 }
 
 inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
+  ZoneScopedN("GPU Bind Pipeline Settings");
   for (size_t i = 0; i < s->uniform_count; i++) {
     switch (s->uniforms[0].type) {
     case UNIFORM_TYPE_SCALAR:
@@ -19,10 +22,13 @@ inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
     case UNIFORM_TYPE_TEXTURE:
       break;
     case UNIFORM_TYPE_VEC2:
+      glUniform2f(p->uniform_indicies[s->uniforms[0].index], s->uniforms[0].vec2.x,s->uniforms[0].vec2.y);
       break;
     case UNIFORM_TYPE_VEC3:
+      glUniform3f(p->uniform_indicies[s->uniforms[0].index], s->uniforms[0].vec3.x, s->uniforms[0].vec3.y, s->uniforms[0].vec3.z);
       break;
     case UNIFORM_TYPE_VEC4:
+      glUniform4f(p->uniform_indicies[s->uniforms[0].index], s->uniforms[0].vec4.x, s->uniforms[0].vec4.y, s->uniforms[0].vec4.z, s->uniforms[0].vec4.w);
       break;
     case UNIFORM_TYPE_MAT4:
       break;
@@ -31,10 +37,10 @@ inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
 }
 
 inline static void draw_mesh(renderer_mesh *mesh) {
+  ZoneScopedN("Drawcall mesh");
+
   internal_mesh *m = pool_get_at_index(rstate->internal_mesh_data, mesh->index);
   glBindVertexArray(m->vao);
-  // glBindBuffer(GL_ARRAY_BUFFER, m->vb); 
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib); 
 
   glDrawElements(GL_TRIANGLES, mesh->triangle_vertex_count, GL_UNSIGNED_INT, 0);
 }
@@ -43,6 +49,7 @@ inline static void render_meshes(size_t count,
                                  renderer_mesh **mesh,
                                  pipeline_settings **settings,
                                  renderer_pipeline *pipeline) {
+  ZoneScopedN("Draw Meshes");
   bind_pipeline(pipeline);
 
   for (size_t i = 0; i < count; i++) {

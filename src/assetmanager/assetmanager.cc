@@ -1,5 +1,6 @@
 #include "assetmanager.hh"
 #include "common/memory_pool.hh"
+#include <tracy/Tracy.hpp>
 
 #define create_function(name)                                                                      \
   uint32_t asset_##name##_create(app_state *state, uint32_t bundle, name##_data *data) {           \
@@ -29,7 +30,7 @@
   }
 
 #define get_function(name)                                                                         \
-  renderer_##name asset_##name##_get_renderer(app_state *state, uint32_t bundle, uint32_t id) {    \
+  renderer_##name asset_##name##_get_render(app_state *state, uint32_t bundle, uint32_t id) {    \
     asset_bundle *b = pool_get_at_index(state->assets.bundles, bundle);                            \
     renderer_##name *r = pool_get_at_index(b->name##_data, id);                                    \
     return *r;                                                                                     \
@@ -40,6 +41,7 @@ void setup_default_bundle(app_state *state) {
 }
 
 void asset_system_init(app_state *state) {
+  ZoneScopedN("Init Asset System");
   state->assets.bundles = pool_create<asset_bundle>(1024);
   setup_default_bundle(state);
 }

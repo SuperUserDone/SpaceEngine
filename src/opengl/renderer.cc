@@ -1,3 +1,4 @@
+#include "common/memory_arena.hh"
 #include "common/memory_pool.hh"
 #include "data/app_state.hh"
 
@@ -5,9 +6,12 @@
 
 #include "glad/gl.c"
 #include "renderer_mesh.hh"
+#include "renderer_draw.hh"
 #include "renderer_pipeline.hh"
 #include "renderer_state.hh"
 #include "renderer_texture.hh"
+
+#include "tracy/Tracy.hpp"
 
 static renderer_state *rstate;
 
@@ -18,6 +22,7 @@ bool renderer_init(mem_arena &scratch, app_state *state, load_proc proc) {
     rstate = arena_push_struct(state->permanent_arena, renderer_state);
     rstate->internal_mesh_data = pool_create<internal_mesh>(65536);
     state->renderer_state = rstate;
+    rstate->perm_data = arena_create();
   } else {
     rstate = (renderer_state *)state->renderer_state;
   }
@@ -57,5 +62,7 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.create_mesh = create_mesh;
   state->api.renderer.update_mesh = update_mesh;
   state->api.renderer.delete_mesh = delete_mesh;
+
+  state->api.renderer.draw_meshes = render_meshes; 
 }
 }

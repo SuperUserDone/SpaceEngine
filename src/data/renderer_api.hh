@@ -73,4 +73,6 @@ struct renderer_api {
   renderer_create_mesh_fun create_mesh;
   renderer_update_mesh_fun update_mesh;
   renderer_delete_mesh_fun delete_mesh;
+
+  renderer_draw_meshes_fun draw_meshes;
 };
