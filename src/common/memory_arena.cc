@@ -34,7 +34,7 @@ mem_arena arena_create(size_t max_size) {
 
   SPACE_ASSERT(a.base, "Could not allocate space for arena!");
 
-  arena_grow(a, max_size);
+  arena_grow(a, page_size);
 
   return a;
 }

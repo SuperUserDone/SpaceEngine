@@ -7,9 +7,10 @@
 #include "common/debug.hh"
 #include "win32_export.hh"
 
-#define arena_push_struct(arena, struct) (struct *)arena_push_zero(arena, sizeof(struct));
-#define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct));
-#define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * len);
+#define arena_push_struct(arena, struct) (struct *)arena_push_zero(arena, sizeof(struct))
+#define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct))
+#define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * len)
+#define arena_push_array_zero(arena, type, len) (type *)arena_push_zero(arena, sizeof(type) * len)
 
 struct mem_arena {
   void *base;
