@@ -1,5 +1,6 @@
 #include "assetmanager/assetmanager.hh"
 #include "common/file_utils.hh"
+#include "common/hash_table.hh"
 #include "common/memory_arena.hh"
 #include "common/win32_export.hh"
 #include "data/app_state.hh"
@@ -43,6 +44,23 @@ void init(app_state *state) {
   state->game.p = pipeline_id;
   state->game.b = b;
   state->game.tex = t;
+
+  /* Temp Code */
+  {
+  hash_table ht = hash_table_create(state->permanent_arena, 4);
+
+  hash_table_insert(ht, 0, (void*)1);
+  hash_table_insert(ht, 4, (void*)2);
+  hash_table_insert(ht, 5, (void*)3);
+  hash_table_insert(ht, 8, (void*)4);
+
+  size_t a = (size_t)hash_table_search(ht, 0);
+  size_t b = (size_t)hash_table_search(ht, 4);
+  size_t c = (size_t)hash_table_search(ht, 5);
+  size_t d = (size_t)hash_table_search(ht, 8);
+  size_t e = (size_t)hash_table_search(ht, 1);
+  size_t f = (size_t)hash_table_search(ht, 1);
+  }
 }
 
 void update(app_state *state) {
