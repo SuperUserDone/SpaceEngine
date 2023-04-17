@@ -24,8 +24,13 @@ struct renderer_mesh {
   uint32_t triangle_vertex_count;
 };
 
+struct vertex {
+  glm::vec2 pos;
+  glm::vec2 uv;
+};
+
 struct mesh_data {
-  glm::vec2 *verticies;
+  vertex *verticies;
   uint32_t *indicies;
 
   size_t vertex_count;
