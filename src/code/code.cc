@@ -20,56 +20,33 @@ void init(app_state *state) {
   const char *names[] = {"color", "tex"};
   d.uniform_names = names;
 
-  uint32_t b = asset_bundle_create(state, "code");
-  uint32_t pipeline_id = asset_pipeline_create(state, b, &d);
+  asset_pipeline_create(state, 0, &d);
 
   mesh_data mesh;
-  vertex verts[] = {{{1.f, 1.f}, {1.f, 1.f}}, {{1.f, 0.f}, {1.f, 0.f}}, {{0.f, 0.f}, {0.f, 0.f}}};
-  uint32_t indicies[] = {0, 1, 2};
+  vertex verts[] = {{{1.f, 1.f}, {1.f, 1.f}}, {{1.f, 0.f}, {1.f, 0.f}}, {{0.f, 0.f}, {0.f, 0.f}}, {{0.f, 1.f}, {0.f, 1.f}}};
+  uint32_t indicies[] = {0, 1, 2, 0, 2, 3};
   mesh.verticies = verts;
   mesh.indicies = indicies;
-  mesh.vertex_count = 3;
-  mesh.index_count = 3;
+  mesh.vertex_count = 4;
+  mesh.index_count = 6;
 
-  uint32_t mesh_id = asset_mesh_create(state, b, &mesh);
+  asset_mesh_create(state, 1, &mesh);
 
   texture_data tex;
   tex.w = 4;
   tex.h = 4;
-  tex.data = nullptr;
+  uint8_t data[] = {
+      205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205,
+      60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,
+      60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,
+  };
+  tex.data = &data;
 
-  uint32_t t = asset_texture_create(state, b, &tex);
+  asset_texture_create(state, 2, &tex);
 
-  state->game.m = mesh_id;
-  state->game.p = pipeline_id;
-  state->game.b = b;
-  state->game.tex = t;
-
-  /* Temp Code */
-  {
-    hash_table ht = hash_table_create(state->permanent_arena, 4);
-
-    hash_table_insert(ht, 12, (void *)1);
-    hash_table_insert(ht, 4, (void *)2);
-    hash_table_insert(ht, 5, (void *)3);
-    hash_table_insert(ht, 8, (void *)4);
-
-    size_t a = (size_t)hash_table_search(ht, 12);
-    size_t b = (size_t)hash_table_search(ht, 4);
-    size_t c = (size_t)hash_table_search(ht, 5);
-    size_t d = (size_t)hash_table_search(ht, 8);
-    size_t e = (size_t)hash_table_search(ht, 1);
-    size_t f = (size_t)hash_table_search(ht, 1);
-
-    hash_table_delete(ht, 12);
-
-    a = (size_t)hash_table_search(ht, 12);
-    b = (size_t)hash_table_search(ht, 4);
-    c = (size_t)hash_table_search(ht, 5);
-    d = (size_t)hash_table_search(ht, 8);
-    e = (size_t)hash_table_search(ht, 1);
-    f = (size_t)hash_table_search(ht, 1);
-  }
+  state->game.m = 1;
+  state->game.p = 0;
+  state->game.tex = 2;
 }
 
 void update(app_state *state) {
@@ -80,11 +57,11 @@ void update(app_state *state) {
   u[0].vec3 = {0.3f, 0.7f, 0.4f};
   u[0].index = 0;
   u[1].type = UNIFORM_TYPE_TEXTURE;
-  u[1].texture = asset_texture_get_render(state, state->game.b, state->game.tex);
+  u[1].texture = asset_texture_get_render(state, state->game.tex);
   u[1].index = 1;
 
-  renderer_pipeline p = asset_pipeline_get_render(state, state->game.b, state->game.p);
-  renderer_mesh m = asset_mesh_get_render(state, state->game.b, state->game.m);
+  renderer_pipeline p = asset_pipeline_get_render(state, state->game.p);
+  renderer_mesh m = asset_mesh_get_render(state, state->game.m);
   s.uniforms = u;
   s.uniform_count = 2;
 
