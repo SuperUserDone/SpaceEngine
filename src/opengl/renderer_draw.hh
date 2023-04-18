@@ -26,15 +26,28 @@ inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
       glUniform1i(p->uniform_indicies[s->uniforms[i].index], bound_tex++);
       break;
     case UNIFORM_TYPE_VEC2:
-      glUniform2f(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].vec2.x,s->uniforms[i].vec2.y);
+      glUniform2f(p->uniform_indicies[s->uniforms[i].index],
+                  s->uniforms[i].vec2.x,
+                  s->uniforms[i].vec2.y);
       break;
     case UNIFORM_TYPE_VEC3:
-      glUniform3f(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].vec3.x, s->uniforms[i].vec3.y, s->uniforms[i].vec3.z);
+      glUniform3f(p->uniform_indicies[s->uniforms[i].index],
+                  s->uniforms[i].vec3.x,
+                  s->uniforms[i].vec3.y,
+                  s->uniforms[i].vec3.z);
       break;
     case UNIFORM_TYPE_VEC4:
-      glUniform4f(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].vec4.x, s->uniforms[i].vec4.y, s->uniforms[i].vec4.z, s->uniforms[i].vec4.w);
+      glUniform4f(p->uniform_indicies[s->uniforms[i].index],
+                  s->uniforms[i].vec4.x,
+                  s->uniforms[i].vec4.y,
+                  s->uniforms[i].vec4.z,
+                  s->uniforms[i].vec4.w);
       break;
     case UNIFORM_TYPE_MAT4:
+      glUniformMatrix4fv(p->uniform_indicies[s->uniforms[i].index],
+                         1,
+                         GL_FALSE,
+                         (float *)&s->uniforms[i].mat4);
       break;
     }
   }
