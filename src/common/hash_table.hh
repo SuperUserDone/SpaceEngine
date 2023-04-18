@@ -5,7 +5,7 @@
 // hood hashing. https://cs.uwaterloo.ca/research/tr/1986/CS-86-14.pdf (This might be a better
 // resource https://dspace.mit.edu/bitstream/handle/1721.1/130693/1251799942-MIT.pdf) Allocation is
 // done at the start to avoid a runtime resizing cost by forcing the user to think about how large
-// the hashmap should be. (Expected + 25%)
+// the hashmap should be. (Expected + 15%)
 
 // Memory is allocated in the given arena and freed at will with arena_clear
 
@@ -13,7 +13,6 @@
 
 #include "common/memory_arena.hh"
 #include "win32_export.hh"
-#include <type_traits>
 
 struct hash_table_entry {
   size_t key;

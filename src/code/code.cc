@@ -1,5 +1,6 @@
 #include "assetmanager/assetmanager.hh"
 #include "common/file_utils.hh"
+#include "common/hash.hh"
 #include "common/hash_table.hh"
 #include "common/memory_arena.hh"
 #include "common/win32_export.hh"
@@ -20,7 +21,7 @@ void init(app_state *state) {
   const char *names[] = {"color", "tex"};
   d.uniform_names = names;
 
-  asset_pipeline_create(state, 0, &d);
+  asset_pipeline_create(state, HASH_KEY("pipeline"), &d);
 
   mesh_data mesh;
   vertex verts[] = {{{1.f, 1.f}, {1.f, 1.f}}, {{1.f, 0.f}, {1.f, 0.f}}, {{0.f, 0.f}, {0.f, 0.f}}, {{0.f, 1.f}, {0.f, 1.f}}};
@@ -30,7 +31,7 @@ void init(app_state *state) {
   mesh.vertex_count = 4;
   mesh.index_count = 6;
 
-  asset_mesh_create(state, 1, &mesh);
+  asset_mesh_create(state, HASH_KEY("mesh"), &mesh);
 
   texture_data tex;
   tex.w = 4;
@@ -42,11 +43,7 @@ void init(app_state *state) {
   };
   tex.data = &data;
 
-  asset_texture_create(state, 2, &tex);
-
-  state->game.m = 1;
-  state->game.p = 0;
-  state->game.tex = 2;
+  asset_texture_create(state, HASH_KEY("texture"), &tex);
 }
 
 void update(app_state *state) {
@@ -57,11 +54,11 @@ void update(app_state *state) {
   u[0].vec3 = {0.3f, 0.7f, 0.4f};
   u[0].index = 0;
   u[1].type = UNIFORM_TYPE_TEXTURE;
-  u[1].texture = asset_texture_get_render(state, state->game.tex);
+  u[1].texture = asset_texture_get_render(state, HASH_KEY("texture"));
   u[1].index = 1;
 
-  renderer_pipeline p = asset_pipeline_get_render(state, state->game.p);
-  renderer_mesh m = asset_mesh_get_render(state, state->game.m);
+  renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("pipeline"));
+  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("mesh"));
   s.uniforms = u;
   s.uniform_count = 2;
 

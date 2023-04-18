@@ -8,6 +8,7 @@ option(ENABLE_PROFILING "" OFF)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(xxHash CONFIG REQUIRED)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -28,7 +29,7 @@ if(${ENABLE_PROFILING})
   set(ADD_LINKS tracy)
 endif()
 
-target_link_libraries(space_common glm::glm ${ADD_LINKS})
+target_link_libraries(space_common glm::glm xxHash::xxhash ${ADD_LINKS})
 
 target_compile_definitions(space_common PRIVATE EXPORT_WIN PUBLIC ${ADD_DEFINES})
 
