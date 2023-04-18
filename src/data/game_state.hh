@@ -1,9 +1,11 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <stdint.h>
+
 struct game_state {
-  uint32_t p;
-  uint32_t m;
-  uint32_t b;
-  uint32_t tex;
+  struct {
+    glm::vec2 pos;
+    float zoom;
+  } camera;
 };

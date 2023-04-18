@@ -14,7 +14,7 @@ enum asset_type {
 
 struct asset_index {
   asset_type type;
-  size_t lookup_value;
+  void *value;
 };
 
 struct asset_storage {

@@ -17,8 +17,8 @@ void init(app_state *state) {
   pipeline_data d;
   d.vertex_shader = vert;
   d.fragment_shader = frag;
-  d.uniform_count = 2;
-  const char *names[] = {"color", "tex"};
+  d.uniform_count = 1;
+  const char *names[] = {"color"};
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("pipeline"), &d);
@@ -32,18 +32,8 @@ void init(app_state *state) {
   mesh.index_count = 6;
 
   asset_mesh_create(state, HASH_KEY("mesh"), &mesh);
-
-  texture_data tex;
-  tex.w = 4;
-  tex.h = 4;
-  uint8_t data[] = {
-      205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205,
-      60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,
-      60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,  205, 60,  60,
-  };
-  tex.data = &data;
-
-  asset_texture_create(state, HASH_KEY("texture"), &tex);
+  state->game.camera.pos = {0, 0};
+  state->game.camera.zoom = 1.f;
 }
 
 void update(app_state *state) {
@@ -53,14 +43,11 @@ void update(app_state *state) {
   u[0].type = UNIFORM_TYPE_VEC3;
   u[0].vec3 = {0.3f, 0.7f, 0.4f};
   u[0].index = 0;
-  u[1].type = UNIFORM_TYPE_TEXTURE;
-  u[1].texture = asset_texture_get_render(state, HASH_KEY("texture"));
-  u[1].index = 1;
 
   renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("pipeline"));
   renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("mesh"));
   s.uniforms = u;
-  s.uniform_count = 2;
+  s.uniform_count = 1;
 
   renderer_mesh *mp = &m;
   pipeline_settings *pp = &s;

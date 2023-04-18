@@ -8,33 +8,39 @@
 
 #define create_function(name, ENUM_NAME)                                                           \
   void asset_##name##_create(app_state *state, size_t id, name##_data *data) {                     \
+    asset_##name##_delete(state, id);                                                              \
     renderer_##name t = state->api.renderer.create_##name(data);                                   \
     renderer_##name *k = pool_alloc(state->assets.name##_data);                                    \
     *k = t;                                                                                        \
     asset_index *i = pool_alloc(state->assets.index_table);                                        \
-    *i = {ENUM_NAME, pool_get_index(state->assets.name##_data, k)};                                \
+    *i = asset_index{ENUM_NAME, (void *)k};                                                        \
     hash_table_insert(state->assets.asset_lookup, id, (void *)i);                                  \
   }
 
-#define update_function(name)                                                                      \
-  uint32_t asset_##name##_update(app_state *state, uint32_t id, name##_data *data) {               \
-    renderer_##name *r = pool_get_at_index(b->name##_data, id);                                    \
-    state->api.renderer.update_##name(r, data);                                                    \
-    return id;                                                                                     \
+#define update_function(name, ENUM_NAME)                                                           \
+  void asset_##name##_update(app_state *state, size_t id, name##_data *data) {                   \
+    asset_index *i = _asset_table_find(state, id);                                                 \
+    if (i && i->type == ENUM_NAME) {                                                               \
+      state->api.renderer.update_##name((renderer_##name *)i->value, data);                        \
+    }                                                                                              \
   }
 
-#define delete_function(name)                                                                      \
-  void asset_##name##_delete(app_state *state, uint32_t bundle, uint32_t id) {                     \
-    asset_bundle *b = pool_get_at_index(state->assets.bundles, bundle);                            \
-    renderer_##name *r = pool_get_at_index(b->name##_data, id);                                    \
-    state->api.renderer.delete_##name(*r);                                                         \
+#define delete_function(name, ENUM_NAME)                                                           \
+  void asset_##name##_delete(app_state *state, size_t id) {                                      \
+    asset_index *i = _asset_table_find(state, id);                                                 \
+    if (i && i->type == ENUM_NAME) {                                                               \
+      state->api.renderer.delete_##name(*(renderer_##name *)i->value);                              \
+      pool_pop(state->assets.name##_data, (renderer_##name *)i->value);                                              \
+      pool_pop(state->assets.index_table, i);                                                     \
+      hash_table_delete(state->assets.asset_lookup, id);                                           \
+    }                                                                                              \
   }
 
-#define get_function(name, ENUM_TYPE)                                                              \
+#define get_function(name, ENUM_NAME)                                                              \
   renderer_##name asset_##name##_get_render(app_state *state, size_t id) {                         \
     asset_index *i = _asset_table_find(state, id);                                                 \
-    if (i && i->type == ENUM_TYPE)                                                                 \
-      return *pool_get_at_index(state->assets.name##_data, i->lookup_value);                                    \
+    if (i && i->type == ENUM_NAME)                                                                 \
+      return *(renderer_##name *)i->value;                                                         \
     return renderer_##name{};                                                                      \
   }
 
@@ -63,14 +69,14 @@ void asset_system_shutdown(app_state *state) {
 create_function(texture, ASSET_TYPE_TEXTURE);
 create_function(pipeline, ASSET_TYPE_PIPELINE);
 create_function(mesh, ASSET_TYPE_MESH);
-/*
-update_function(texture);
-update_function(mesh);
 
-delete_function(texture);
-delete_function(pipeline);
-delete_function(mesh);
-*/
+update_function(texture, ASSET_TYPE_TEXTURE);
+update_function(mesh, ASSET_TYPE_MESH);
+
+delete_function(texture, ASSET_TYPE_TEXTURE);
+delete_function(pipeline, ASSET_TYPE_PIPELINE);
+delete_function(mesh, ASSET_TYPE_MESH);
+
 get_function(texture, ASSET_TYPE_TEXTURE);
 get_function(pipeline, ASSET_TYPE_PIPELINE);
 get_function(mesh, ASSET_TYPE_MESH);

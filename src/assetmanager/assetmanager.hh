@@ -35,7 +35,7 @@ APIFUNC extern renderer_pipeline asset_pipeline_get_render(app_state *state, siz
 APIFUNC extern void asset_mesh_create(app_state *state, size_t id, mesh_data *data);
 // Used to upload the data to gpu memory. The user is responsible for the management of data's
 // memory
-APIFUNC extern uint32_t asset_mesh_update(app_state *state, size_t id, mesh_data *data);
+APIFUNC extern void asset_mesh_update(app_state *state, size_t id, mesh_data *data);
 // Used to delete the mesh
 APIFUNC extern void asset_mesh_delete(app_state *state, size_t id);
 // Used to get the renderer id of the mesh id
