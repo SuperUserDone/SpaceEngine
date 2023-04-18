@@ -47,19 +47,28 @@ void init(app_state *state) {
 
   /* Temp Code */
   {
-  hash_table ht = hash_table_create(state->permanent_arena, 4);
+    hash_table ht = hash_table_create(state->permanent_arena, 4);
 
-  hash_table_insert(ht, 0, (void*)1);
-  hash_table_insert(ht, 4, (void*)2);
-  hash_table_insert(ht, 5, (void*)3);
-  hash_table_insert(ht, 8, (void*)4);
+    hash_table_insert(ht, 12, (void *)1);
+    hash_table_insert(ht, 4, (void *)2);
+    hash_table_insert(ht, 5, (void *)3);
+    hash_table_insert(ht, 8, (void *)4);
 
-  size_t a = (size_t)hash_table_search(ht, 0);
-  size_t b = (size_t)hash_table_search(ht, 4);
-  size_t c = (size_t)hash_table_search(ht, 5);
-  size_t d = (size_t)hash_table_search(ht, 8);
-  size_t e = (size_t)hash_table_search(ht, 1);
-  size_t f = (size_t)hash_table_search(ht, 1);
+    size_t a = (size_t)hash_table_search(ht, 12);
+    size_t b = (size_t)hash_table_search(ht, 4);
+    size_t c = (size_t)hash_table_search(ht, 5);
+    size_t d = (size_t)hash_table_search(ht, 8);
+    size_t e = (size_t)hash_table_search(ht, 1);
+    size_t f = (size_t)hash_table_search(ht, 1);
+
+    hash_table_delete(ht, 12);
+
+    a = (size_t)hash_table_search(ht, 12);
+    b = (size_t)hash_table_search(ht, 4);
+    c = (size_t)hash_table_search(ht, 5);
+    d = (size_t)hash_table_search(ht, 8);
+    e = (size_t)hash_table_search(ht, 1);
+    f = (size_t)hash_table_search(ht, 1);
   }
 }
 

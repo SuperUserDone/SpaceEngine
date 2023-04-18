@@ -48,24 +48,50 @@ static inline bool hash_table_insert(hash_table &t, size_t key, void *value) {
     location = (location + 1) % t.size;
   }
   t.e[location] = entry;
-
+  t.nentries++;
   return true;
 };
 
-// We use the linear search version of the hash lookup, as we do not need the better organ or smart
-// lookup functions in the paper.
-static inline void *hash_table_search(hash_table &t, size_t key) {
+static inline int64_t _hash_table_get_key_location(hash_table &t, size_t key) {
   size_t location = key % t.size;
 
-  void *val = nullptr;
+  int64_t loc = -1;
   for (size_t cost = 0; t.e[location].cost >= cost; cost++, location++) {
     location = location % t.size;
 
     if (t.e[location].key == key) {
-      val = t.e[location].val;
+      loc = location;
       break;
     }
   }
 
-  return val;
+  return loc;
+}
+
+// We use the linear search version of the hash lookup, as we do not need the better organ or smart
+// lookup functions in the paper.
+static inline void *hash_table_search(hash_table &t, size_t key) {
+  int64_t loc = _hash_table_get_key_location(t, key);
+  if (loc >= 0) {
+    return t.e[loc].val;
+  } else {
+    return nullptr;
+  }
+}
+
+static inline void hash_table_delete(hash_table &t, size_t key) {
+  int64_t loc = _hash_table_get_key_location(t, key);
+  while(loc >= 0) {
+    size_t pl = loc;
+    loc += (loc + 1) % t.size;
+    if(t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0)
+    {
+      t.e[pl] = t.e[loc];
+      t.e[pl].cost--; 
+    }
+    else {
+      t.e[pl] = hash_table_entry{0,0,0};
+      break;
+    }
+  }
 }
