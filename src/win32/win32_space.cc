@@ -17,9 +17,10 @@ static char module_name[MAX_PATH];
 
 static mem_arena init_scratch;
 
-void win32_err(const char *err) {
+void win32_err(const char *err, bool die) {
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR!", err, nullptr);
-  exit(-1);
+  if(die)
+    exit(-1);
 }
 
 void hotreload_renderer(app_state *state);
