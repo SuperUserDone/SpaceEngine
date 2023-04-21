@@ -18,7 +18,7 @@
   }
 
 #define update_function(name, ENUM_NAME)                                                           \
-  void asset_##name##_update(app_state *state, size_t id, name##_data *data) {                   \
+  void asset_##name##_update(app_state *state, size_t id, name##_data *data) {                     \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
       state->api.renderer.update_##name((renderer_##name *)i->value, data);                        \
@@ -26,12 +26,12 @@
   }
 
 #define delete_function(name, ENUM_NAME)                                                           \
-  void asset_##name##_delete(app_state *state, size_t id) {                                      \
+  void asset_##name##_delete(app_state *state, size_t id) {                                        \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
-      state->api.renderer.delete_##name(*(renderer_##name *)i->value);                              \
-      pool_pop(state->assets.name##_data, (renderer_##name *)i->value);                                              \
-      pool_pop(state->assets.index_table, i);                                                     \
+      state->api.renderer.delete_##name(*(renderer_##name *)i->value);                             \
+      pool_pop(state->assets.name##_data, (renderer_##name *)i->value);                            \
+      pool_pop(state->assets.index_table, i);                                                      \
       hash_table_delete(state->assets.asset_lookup, id);                                           \
     }                                                                                              \
   }

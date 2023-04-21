@@ -82,7 +82,7 @@ static inline void hash_table_delete(hash_table &t, size_t key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   while(loc >= 0) {
     size_t pl = loc;
-    loc += (loc + 1) % t.size;
+    loc = (loc + 1) % t.size;
     if(t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0)
     {
       t.e[pl] = t.e[loc];
