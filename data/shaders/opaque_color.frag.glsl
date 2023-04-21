@@ -6,5 +6,6 @@ in vec2 uv;
 uniform vec3 color;
 
 void main() {
-  FragColor = vec4(color, 1.f);
+  FragColor = vec4(color.rgb, 1.f);
 }
+

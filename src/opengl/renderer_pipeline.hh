@@ -25,7 +25,6 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
     glShaderSource(fragment, 1, &data->fragment_shader, nullptr);
 
     glCompileShader(vertex);
-    glCompileShader(fragment);
 
     int success;
     char infoLog[512];
@@ -35,6 +34,8 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
       glGetShaderInfoLog(vertex, 512, NULL, infoLog);
       SPACE_ASSERT(false, "Vertex shader compile failed %s", infoLog);
     }
+
+    glCompileShader(fragment);
 
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
 
