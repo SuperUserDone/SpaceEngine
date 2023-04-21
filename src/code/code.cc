@@ -48,8 +48,8 @@ void update(app_state *state) {
   glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
   area /= state->game.camera.zoom;
 
-  glm::mat4 cam = glm::translate(glm::mat4(1.f), glm::vec3(state->game.camera.pos, 0.f)) *
-                  glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f);
+  glm::mat4 cam = glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f) *
+                  glm::translate(glm::mat4(1.f), glm::vec3(-state->game.camera.pos, 0.f));
 
   renderer_uniform u[2];
   u[0].type = UNIFORM_TYPE_VEC3;

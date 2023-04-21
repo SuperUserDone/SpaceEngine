@@ -174,6 +174,7 @@ void free_code(app_state *state) {
 void hotreload_code(app_state *state) {
   free_code(state);
   load_code(state);
+  state->api.game.init(state);
 }
 
 void load_renderer(app_state *state) {
