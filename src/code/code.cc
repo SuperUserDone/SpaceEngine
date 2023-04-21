@@ -7,6 +7,7 @@
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/renderer_api.hh"
+#include "imgui.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -73,10 +74,19 @@ void update(app_state *state) {
 void shutdown(app_state *state) {
 }
 
+void draw_debug_info(app_state *state) {
+  ImGui::Begin("Camera");
+  ImGui::DragFloat("Zoom", &state->game.camera.zoom, 0.1f, 0.01f, 100.f);
+  ImGui::DragFloat2("Pos", (float*)&state->game.camera.pos);
+  ImGui::End();
+}
+
 extern "C" {
 ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.game.init = init;
   state->api.game.update = update;
   state->api.game.shutdown = shutdown;
+
+  state->api.game.draw_debug_info = draw_debug_info;
 }
 }

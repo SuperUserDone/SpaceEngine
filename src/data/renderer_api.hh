@@ -56,6 +56,8 @@ typedef void (*renderer_draw_meshes_fun)(size_t count,
                                          renderer_mesh **mesh,
                                          pipeline_settings **settings,
                                          renderer_pipeline *pipeline);
+typedef void (*renderer_imgui_begin_fun)();
+typedef void (*renderer_imgui_end_fun)();
 
 struct renderer_api {
   renderer_init_fun init;
@@ -75,4 +77,7 @@ struct renderer_api {
   renderer_delete_mesh_fun delete_mesh;
 
   renderer_draw_meshes_fun draw_meshes;
+  renderer_imgui_begin_fun imgui_begin;
+  renderer_imgui_begin_fun imgui_end;
+
 };

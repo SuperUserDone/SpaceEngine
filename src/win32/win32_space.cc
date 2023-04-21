@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 
+#include "backends/imgui_impl_sdl2.h"
 #include "client/TracyProfiler.hpp"
+#include "imgui.h"
 #include "tracy/Tracy.hpp"
 #include <SDL_timer.h>
 #include <SDL_video.h>
@@ -19,7 +21,7 @@ static mem_arena init_scratch;
 
 void win32_err(const char *err, bool die) {
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR!", err, nullptr);
-  if(die)
+  if (die)
     exit(-1);
 }
 
@@ -28,6 +30,28 @@ void hotreload_code(app_state *state);
 
 void run_game_loop(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplSDL2_InitForOpenGL(ws->window, ws->glcontext);
+  {
+    ZoneScopedN("Init Renderer");
+    SPACE_ASSERT(
+        state->api.renderer.init(state->frame_arena, state, (load_proc)SDL_GL_GetProcAddress),
+        "Failed to load renderer!");
+  }
+
+  {
+    ZoneScopedN("Init Usercode");
+    state->api.game.init(state);
+  }
   state->running = true;
   arena_clear(init_scratch);
 
@@ -38,6 +62,8 @@ void run_game_loop(app_state *state) {
   uint64_t dt_start = start;
   uint64_t freq = SDL_GetPerformanceFrequency();
 
+  static bool debug_ui = false;
+
   while (state->running) {
     arena_clear(state->frame_arena);
 
@@ -45,6 +71,7 @@ void run_game_loop(app_state *state) {
     {
       ZoneScopedN("Process Events");
       while (SDL_PollEvent(&e)) {
+        ImGui_ImplSDL2_ProcessEvent(&e);
         if (e.type == SDL_QUIT) {
           state->running = false;
         }
@@ -85,13 +112,16 @@ void run_game_loop(app_state *state) {
             hotreload_renderer(state);
             hotreload_code(state);
           }
+          if (e.key.keysym.scancode == SDL_SCANCODE_F1)
+            debug_ui = !debug_ui;
         }
       }
     }
-    
+
     SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
     state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
     state->api.renderer.clear(0, 0, 0, 1);
+    ImGui_ImplSDL2_NewFrame();
 
     state->api.game.update(state);
 
@@ -109,6 +139,10 @@ void run_game_loop(app_state *state) {
     TracyPlot("Delta Time", state->time.dt);
     TracyPlot("Time", state->time.t);
 
+    state->api.renderer.imgui_begin();
+    if (debug_ui)
+      state->api.game.draw_debug_info(state);
+    state->api.renderer.imgui_end();
     SDL_GL_SwapWindow(ws->window);
     FrameMark;
   }
@@ -134,6 +168,7 @@ void create_window(app_state *state) {
                                 600,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
   ws->glcontext = SDL_GL_CreateContext(ws->window);
+  SDL_GL_MakeCurrent(ws->window, ws->glcontext);
 }
 
 void copy_dll(char *new_name, const char *dll) {
@@ -235,17 +270,6 @@ int main(int argc, char *argv[]) {
     load_code(&state);
 
     asset_system_init(&state);
-    {
-      ZoneScopedN("Init Renderer");
-      SPACE_ASSERT(
-          state.api.renderer.init(state.frame_arena, &state, (load_proc)SDL_GL_GetProcAddress),
-          "Failed to load renderer!");
-    }
-
-    {
-      ZoneScopedN("Init Usercode");
-      state.api.game.init(&state);
-    }
   }
 
   run_game_loop(&state);

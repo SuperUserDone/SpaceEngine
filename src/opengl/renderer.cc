@@ -1,3 +1,4 @@
+#include "backends/imgui_impl_opengl3.h"
 #include "common/memory_arena.hh"
 #include "common/memory_pool.hh"
 #include "data/app_state.hh"
@@ -5,12 +6,14 @@
 #include "common/win32_export.hh"
 
 #include "glad/gl.c"
-#include "renderer_mesh.hh"
 #include "renderer_draw.hh"
+#include "renderer_mesh.hh"
 #include "renderer_pipeline.hh"
 #include "renderer_state.hh"
 #include "renderer_texture.hh"
 
+#include "backends/imgui_impl_opengl3.h"
+#include "imgui.h"
 #include "tracy/Tracy.hpp"
 
 static renderer_state *rstate;
@@ -23,6 +26,7 @@ bool renderer_init(mem_arena &scratch, app_state *state, load_proc proc) {
     rstate->internal_mesh_data = pool_create<internal_mesh>(65536);
     state->renderer_state = rstate;
     rstate->perm_data = arena_create();
+    ImGui_ImplOpenGL3_Init("#version 330 core");
   } else {
     rstate = (renderer_state *)state->renderer_state;
   }
@@ -45,6 +49,16 @@ bool renderer_shutdown() {
   return true;
 }
 
+void imgui_begin() {
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui::NewFrame();
+}
+
+void imgui_end() {
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 extern "C" {
 ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.init = renderer_init;
@@ -63,6 +77,9 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.update_mesh = update_mesh;
   state->api.renderer.delete_mesh = delete_mesh;
 
-  state->api.renderer.draw_meshes = render_meshes; 
+  state->api.renderer.draw_meshes = render_meshes;
+
+  state->api.renderer.imgui_begin = imgui_begin;
+  state->api.renderer.imgui_end = imgui_end;
 }
 }
