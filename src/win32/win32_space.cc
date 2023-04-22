@@ -1,19 +1,17 @@
-#include <SDL2/SDL.h>
-
+#include "assetmanager/assetmanager.hh"
 #include "backends/imgui_impl_sdl2.h"
 #include "client/TracyProfiler.hpp"
+#include "common/debug.hh"
+#include "common/memory_arena.hh"
+#include "data/app_state.hh"
 #include "imgui.h"
 #include "tracy/Tracy.hpp"
+#include "win32/win32_data.hh"
+
 #include <SDL_timer.h>
 #include <SDL_video.h>
 #include <stdio.h>
 #include <windows.h>
-
-#include "assetmanager/assetmanager.hh"
-#include "common/debug.hh"
-#include "common/memory_arena.hh"
-#include "data/app_state.hh"
-#include "win32/win32_data.hh"
 
 static char module_name[MAX_PATH];
 
@@ -28,9 +26,8 @@ void win32_err(const char *err, bool die) {
 void hotreload_renderer(app_state *state);
 void hotreload_code(app_state *state);
 
-void run_game_loop(app_state *state) {
+void init_imgui(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
-
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
@@ -41,6 +38,13 @@ void run_game_loop(app_state *state) {
   ImGui::StyleColorsDark();
 
   ImGui_ImplSDL2_InitForOpenGL(ws->window, ws->glcontext);
+}
+
+void run_game_loop(app_state *state) {
+  win32_state *ws = (win32_state *)state->platform_state;
+
+  init_imgui(state);
+
   {
     ZoneScopedN("Init Renderer");
     SPACE_ASSERT(
@@ -50,8 +54,10 @@ void run_game_loop(app_state *state) {
 
   {
     ZoneScopedN("Init Usercode");
+    state->api.game.load_assets(state);
     state->api.game.init(state);
   }
+
   state->running = true;
   arena_clear(init_scratch);
 
@@ -132,7 +138,7 @@ void run_game_loop(app_state *state) {
 
     dt_start = now;
     if (state->time.t > 1024) {
-      state->time.t = 0;
+      state->time.t = state->time.t - 1024;
       start = now;
     }
 
@@ -140,8 +146,11 @@ void run_game_loop(app_state *state) {
     TracyPlot("Time", state->time.t);
 
     state->api.renderer.imgui_begin();
-    if (debug_ui)
+
+    if (debug_ui) {
       state->api.game.draw_debug_info(state);
+    }
+
     state->api.renderer.imgui_end();
     SDL_GL_SwapWindow(ws->window);
     FrameMark;
@@ -210,7 +219,7 @@ void free_code(app_state *state) {
 void hotreload_code(app_state *state) {
   free_code(state);
   load_code(state);
-  state->api.game.init(state);
+  state->api.game.load_assets(state);
 }
 
 void load_renderer(app_state *state) {

@@ -20,6 +20,7 @@ static renderer_state *rstate;
 
 bool renderer_init(mem_arena &scratch, app_state *state, load_proc proc) {
   gladLoadGL(proc);
+  glEnable(GL_FRAMEBUFFER_SRGB);
 
   if (!state->renderer_state) {
     rstate = arena_push_struct(state->permanent_arena, renderer_state);

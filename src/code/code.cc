@@ -14,15 +14,15 @@
 #include <math.h>
 #include <stdlib.h>
 
-void init(app_state *state) {
-  char *frag = load_file(state->frame_arena, "data/shaders/opaque_color.frag.glsl");
-  char *vert = load_file(state->frame_arena, "data/shaders/opaque_color.vert.glsl");
+void load_assets(app_state *state){
+  char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
+  char *default_vert = load_file(state->frame_arena, "data/shaders/default.vert.glsl");
 
   pipeline_data d;
-  d.vertex_shader = vert;
-  d.fragment_shader = frag;
+  d.vertex_shader = default_vert;
+  d.fragment_shader = sol_frag;
   d.uniform_count = 2;
-  const char *names[] = {"color", "transform"};
+  const char *names[] = {"time", "transform"};
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("pipeline"), &d);
@@ -39,6 +39,9 @@ void init(app_state *state) {
   mesh.index_count = 6;
 
   asset_mesh_create(state, HASH_KEY("mesh"), &mesh);
+}
+
+void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 1.f;
 }
@@ -53,8 +56,8 @@ void update(app_state *state) {
                   glm::translate(glm::mat4(1.f), glm::vec3(-state->game.camera.pos, 0.f));
 
   renderer_uniform u[2];
-  u[0].type = UNIFORM_TYPE_VEC3;
-  u[0].vec3 = {0.3f, 0.7f, 0.4f};
+  u[0].type = UNIFORM_TYPE_SCALAR;
+  u[0].scalar = state->time.t;
   u[0].index = 0;
   u[1].type = UNIFORM_TYPE_MAT4;
   u[1].mat4 = cam;
@@ -88,5 +91,6 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.game.shutdown = shutdown;
 
   state->api.game.draw_debug_info = draw_debug_info;
+  state->api.game.load_assets = load_assets;
 }
 }
