@@ -3,6 +3,7 @@
 #include "client/TracyProfiler.hpp"
 #include "common/debug.hh"
 #include "common/memory_arena.hh"
+#include "common/timer.hh"
 #include "data/app_state.hh"
 #include "imgui.h"
 #include "tracy/Tracy.hpp"
@@ -64,9 +65,9 @@ void run_game_loop(app_state *state) {
   state->time.dt = 0;
   state->time.t = 0;
 
-  uint64_t start = SDL_GetPerformanceCounter();
-  uint64_t dt_start = start;
-  uint64_t freq = SDL_GetPerformanceFrequency();
+  timer_init_subsystem();
+  precise_timer delta_timer = timer_create();
+  precise_timer time_timer = timer_create();
 
   static bool debug_ui = false;
 
@@ -131,15 +132,11 @@ void run_game_loop(app_state *state) {
 
     state->api.game.update(state);
 
-    uint64_t now = SDL_GetPerformanceCounter();
+    state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
+    state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
 
-    state->time.dt = ((double)(now - dt_start)) / (double)freq;
-    state->time.t = ((double)(now - start)) / (double)freq;
-
-    dt_start = now;
-    if (state->time.t > 1024) {
-      state->time.t = state->time.t - 1024;
-      start = now;
+    if (state->time.t >= 1024) {
+      timer_reset_us(time_timer);
     }
 
     TracyPlot("Delta Time", state->time.dt);

@@ -43,7 +43,7 @@ void load_assets(app_state *state){
 
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
-  state->game.camera.zoom = 1.f;
+  state->game.camera.zoom = 5.f;
 }
 
 void update(app_state *state) {
