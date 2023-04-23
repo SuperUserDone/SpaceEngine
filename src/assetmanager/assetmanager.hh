@@ -1,7 +1,7 @@
 #pragma once
 
-// This is the interface to the code used to load assets from disk, cache them in memory and upload
-// them to the gpu. It also provides interfaces to create assets from memory.
+// This is the interface to the code used to load assets and upload them to the gpu. It also
+// provides interfaces to create assets from memory.
 
 #include "common/win32_export.hh"
 #include "data/app_state.hh"
@@ -13,7 +13,7 @@ APIFUNC extern void asset_system_init(app_state *state);
 APIFUNC extern void asset_system_shutdown(app_state *state);
 
 // Used to create a texture. If texture_data is not nullptr, it will also upload the data into gpu
-// memory. The user is responsible for the management of data's memor
+// memory. The user is responsible for the management of data's memory
 APIFUNC extern void asset_texture_create(app_state *state, size_t id, texture_data *data);
 // Used to upload the data to gpu memory. The user is responsible for the management of data's
 // memory
@@ -30,8 +30,8 @@ APIFUNC extern void asset_pipeline_delete(app_state *state, size_t id);
 // Used to get the renderer id of the pipeline id
 APIFUNC extern renderer_pipeline asset_pipeline_get_render(app_state *state, size_t id);
 
-// Used to create a mesh. If mesh_data is not nullptr, it will also upload the data into gpu
-// memory. The user is responsible for the management of data's memory
+// Used to create a mesh. It will also upload the data into gpu memory. The user is responsible for
+// the management of data's memory
 APIFUNC extern void asset_mesh_create(app_state *state, size_t id, mesh_data *data);
 // Used to upload the data to gpu memory. The user is responsible for the management of data's
 // memory

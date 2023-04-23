@@ -11,7 +11,7 @@ APIFUNC extern platform_error_func platform_err;
     size_t needed = snprintf(NULL, 0, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);    \
     needed++;                                                                                      \
     char *buffer = (char *)malloc(needed);                                                         \
-    sprintf(buffer, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);                      \
+    sprintf_s(buffer, needed, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);            \
     platform_err(buffer, true);                                                                    \
   }
 
@@ -20,6 +20,6 @@ APIFUNC extern platform_error_func platform_err;
     size_t needed = snprintf(NULL, 0, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);    \
     needed++;                                                                                      \
     char *buffer = (char *)malloc(needed);                                                         \
-    sprintf(buffer, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);                      \
+    sprintf_s(buffer, needed, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);            \
     platform_err(buffer, false);                                                                   \
   }
