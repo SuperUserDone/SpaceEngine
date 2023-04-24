@@ -26,11 +26,12 @@ void load_assets(app_state *state) {
   int c;
   int x, y;
   td.data = stbi_load("data/textures/organic.jpg", &x, &y, &c, 3);
-
+  td.format = TEX_FORMAT_SRGB;
   td.w = x;
   td.h = y;
 
   asset_texture_create(state, HASH_KEY("organic1"), &td);
+  stbi_image_free(td.data);
 
   pipeline_data d;
   d.vertex_shader = default_vert;

@@ -7,7 +7,14 @@
 #include <glm/glm.hpp>
 #include <stdint.h>
 
-#define PIPELINE_MAX_UNIFORM 64 
+enum texture_formats { 
+  TEX_FORMAT_R,
+  TEX_FORMAT_RG,
+  TEX_FORMAT_RGB,
+  TEX_FORMAT_RGBA,
+  TEX_FORMAT_SRGB,
+  TEX_FORMAT_SRGBA
+};
 
 struct renderer_texture {
   uint32_t index;
@@ -15,6 +22,9 @@ struct renderer_texture {
 
 struct texture_data {
   void *data;
+
+  texture_formats format;
+
   uint16_t w;
   uint16_t h;
 };
