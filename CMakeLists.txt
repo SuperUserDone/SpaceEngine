@@ -20,6 +20,7 @@ add_library(imgui SHARED imgui/backends/imgui_impl_opengl3.cpp imgui/imgui.cpp i
 add_library(space_common SHARED src/common/timer.cc src/common/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)
+add_library(space_renderer STATIC src/renderer/renderer.cc)
 add_executable(space WIN32 src/win32/win32_space.cc imgui/backends/imgui_impl_sdl2.cpp)
 
 include_directories(tracy/public)
@@ -45,7 +46,8 @@ target_link_libraries(space
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 
-target_link_libraries(space_code PRIVATE space_common glm::glm ${ADD_LINKS})
+target_link_libraries(space_renderer PRIVATE glm::glm)
+target_link_libraries(space_code PRIVATE space_common space_renderer glm::glm ${ADD_LINKS})
 target_link_libraries(space_opengl PRIVATE space_common glm::glm ${ADD_LINKS})
 
 add_dependencies(space space_opengl space_common space_code)

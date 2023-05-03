@@ -2,16 +2,18 @@
 
 // Defines some structs to aid with management of assets and renderer data.
 // structs starting with renderer_* should be treated as opaque, but I have decided to not make them
-// opaque pointers to avoid a _possible_ cache miss when looking up the actual values we need.
+// opaque pointers to avoid a _possible_ cache miss when looking up the actual values we need. Might
+// not be neccacary though, I have not benchmarked it
 
 #include <glm/glm.hpp>
 #include <stdint.h>
 
-enum texture_formats { 
+enum texture_formats {
   TEX_FORMAT_R,
   TEX_FORMAT_RG,
   TEX_FORMAT_RGB,
   TEX_FORMAT_RGBA,
+  TEX_FORMAT_RGBA_F16,
   TEX_FORMAT_SRGB,
   TEX_FORMAT_SRGBA
 };
@@ -48,15 +50,22 @@ struct mesh_data {
 };
 
 struct pipeline_data {
-  char* fragment_shader;
-  char* vertex_shader;
+  char *fragment_shader;
+  char *vertex_shader;
 
-  const char** uniform_names;
+  const char **uniform_names;
   size_t uniform_count;
 };
 
 struct renderer_pipeline {
   uint32_t index;
-
   size_t *uniform_indicies;
+};
+
+struct framebuffer_data {
+  renderer_texture color_attachment;
+};
+
+struct renderer_framebuffer {
+  uint32_t index;
 };

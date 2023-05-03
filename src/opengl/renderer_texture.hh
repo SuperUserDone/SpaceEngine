@@ -18,6 +18,9 @@ static inline GLenum tex_type_to_internal_type(texture_formats f) {
     return GL_SRGB8;
   case TEX_FORMAT_SRGBA:
     return GL_SRGB8_ALPHA8;
+  case TEX_FORMAT_RGBA_F16:
+    return GL_RGBA16F;
+    break;
   }
 }
 
@@ -31,6 +34,7 @@ static inline GLenum tex_type_to_external(texture_formats f) {
   case TEX_FORMAT_SRGB:
     return GL_RGB;
   case TEX_FORMAT_RGBA:
+  case TEX_FORMAT_RGBA_F16:
   case TEX_FORMAT_SRGBA:
     return GL_RGBA;
   }

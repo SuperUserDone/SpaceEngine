@@ -30,6 +30,13 @@ APIFUNC extern void asset_pipeline_delete(app_state *state, size_t id);
 // Used to get the renderer id of the pipeline id
 APIFUNC extern renderer_pipeline asset_pipeline_get_render(app_state *state, size_t id);
 
+// Used to create a framebuffer. Data must be defined
+APIFUNC extern void asset_framebuffer_create(app_state *state, size_t id, framebuffer_data *data);
+// Used to delete the framebuffer
+APIFUNC extern void asset_framebuffer_delete(app_state *state, size_t id);
+// Used to fetch a framebuffer
+APIFUNC extern renderer_framebuffer asset_framebuffer_get_render(app_state *state, size_t id);
+
 // Used to create a mesh. It will also upload the data into gpu memory. The user is responsible for
 // the management of data's memory
 APIFUNC extern void asset_mesh_create(app_state *state, size_t id, mesh_data *data);

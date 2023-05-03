@@ -5,7 +5,9 @@
 #include "common/memory_arena.hh"
 #include "common/timer.hh"
 #include "data/app_state.hh"
+#include "data/event.hh"
 #include "imgui.h"
+#include "sdl_helpers/events.hh"
 #include "tracy/Tracy.hpp"
 #include "win32/win32_data.hh"
 
@@ -44,21 +46,6 @@ void init_imgui(app_state *state) {
 void run_game_loop(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
 
-  init_imgui(state);
-
-  {
-    ZoneScopedN("Init Renderer");
-    SPACE_ASSERT(
-        state->api.renderer.init(state->frame_arena, state, (load_proc)SDL_GL_GetProcAddress),
-        "Failed to load renderer!");
-  }
-
-  {
-    ZoneScopedN("Init Usercode");
-    state->api.game.load_assets(state);
-    state->api.game.init(state);
-  }
-
   state->running = true;
   arena_clear(init_scratch);
 
@@ -79,9 +66,12 @@ void run_game_loop(app_state *state) {
       ZoneScopedN("Process Events");
       while (SDL_PollEvent(&e)) {
         ImGui_ImplSDL2_ProcessEvent(&e);
-        if (e.type == SDL_QUIT) {
-          state->running = false;
-        }
+
+        event translated = convert_sdl_event(e);
+
+        if (translated.type != EVENT_TYPE_NONE)
+          state->api.game.event(state, translated);
+
         if (e.type == SDL_KEYUP) {
           if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
             // check if buildscript exists
@@ -130,7 +120,7 @@ void run_game_loop(app_state *state) {
     state->api.renderer.clear(0, 0, 0, 1);
     ImGui_ImplSDL2_NewFrame();
 
-    state->api.game.update(state);
+    state->api.game.render(state);
 
     state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
     state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
@@ -275,7 +265,22 @@ int main(int argc, char *argv[]) {
     load_renderer(&state);
     load_code(&state);
 
-    asset_system_init(&state);
+    init_imgui(&state);
+
+    {
+      ZoneScopedN("Init Renderer");
+      SPACE_ASSERT(
+          state.api.renderer.init(state.frame_arena, &state, (load_proc)SDL_GL_GetProcAddress),
+          "Failed to load renderer!");
+
+      asset_system_init(&state);
+    }
+
+    {
+      ZoneScopedN("Init Usercode");
+      state.api.game.load_assets(&state);
+      state.api.game.init(&state);
+    }
   }
 
   run_game_loop(&state);

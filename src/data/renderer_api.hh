@@ -52,6 +52,11 @@ typedef renderer_mesh (*renderer_create_mesh_fun)(mesh_data *data);
 typedef void (*renderer_update_mesh_fun)(renderer_mesh *tex, mesh_data *data);
 typedef void (*renderer_delete_mesh_fun)(renderer_mesh tex);
 
+typedef renderer_framebuffer (*renderer_create_framebuffer_fun)(framebuffer_data *data);
+typedef void (*renderer_delete_framebuffer_fun)(renderer_framebuffer tex);
+typedef void (*renderer_use_framebuffer_fun)(renderer_framebuffer tex);
+typedef void (*renderer_use_default_framebuffer_fun)();
+
 typedef void (*renderer_draw_meshes_fun)(size_t count,
                                          renderer_mesh **mesh,
                                          pipeline_settings **settings,
@@ -75,6 +80,11 @@ struct renderer_api {
   renderer_create_mesh_fun create_mesh;
   renderer_update_mesh_fun update_mesh;
   renderer_delete_mesh_fun delete_mesh;
+
+  renderer_create_framebuffer_fun create_framebuffer;
+  renderer_delete_framebuffer_fun delete_framebuffer;
+  renderer_use_framebuffer_fun use_framebuffer;
+  renderer_use_default_framebuffer_fun use_default_framebuffer;
 
   renderer_draw_meshes_fun draw_meshes;
   renderer_imgui_begin_fun imgui_begin;

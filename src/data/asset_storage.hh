@@ -10,6 +10,7 @@ enum asset_type {
   ASSET_TYPE_TEXTURE,
   ASSET_TYPE_PIPELINE,
   ASSET_TYPE_MESH,
+  ASSET_TYPE_FRAMEBUFFER
 };
 
 struct asset_index {
@@ -23,5 +24,6 @@ struct asset_storage {
   mem_pool<renderer_texture> texture_data;
   mem_pool<renderer_pipeline> pipeline_data;
   mem_pool<renderer_mesh> mesh_data;
+  mem_pool<renderer_framebuffer> framebuffer_data;
   mem_pool<asset_index> index_table;
 };

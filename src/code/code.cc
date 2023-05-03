@@ -8,6 +8,7 @@
 #include "data/asset_types.hh"
 #include "data/renderer_api.hh"
 #include "imgui.h"
+#include "renderer/renderer.hh"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,8 +37,8 @@ void load_assets(app_state *state) {
   pipeline_data d;
   d.vertex_shader = default_vert;
   d.fragment_shader = sol_frag;
-  d.uniform_count = 2;
-  const char *names[] = {"time", "transform", "organic"};
+  d.uniform_count = 4;
+  const char *names[] = {"time", "transform", "organic", "sunColor"};
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("pipeline"), &d);
@@ -59,54 +60,50 @@ void load_assets(app_state *state) {
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 9.f;
+  state->game.sun_color = {231.f / 255.f, 103.f / 255.f, 16.f / 255.f};
+  render_init(state);
 }
 
-void update(app_state *state) {
-  pipeline_settings s;
+void render(app_state *state) {
+  render_game(state);
+}
 
-  glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
-  area /= state->game.camera.zoom;
-
-  glm::mat4 cam = glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f) *
-                  glm::translate(glm::mat4(1.f), glm::vec3(-state->game.camera.pos, 0.f));
-
-  renderer_uniform u[3];
-  u[0].type = UNIFORM_TYPE_SCALAR;
-  u[0].scalar = state->time.t;
-  u[0].index = 0;
-  u[1].type = UNIFORM_TYPE_MAT4;
-  u[1].mat4 = cam;
-  u[1].index = 1;
-  u[2].type = UNIFORM_TYPE_TEXTURE;
-  u[2].texture = asset_texture_get_render(state, HASH_KEY("organic1"));
-  u[2].index = 2;
-
-  renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("pipeline"));
-  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("mesh"));
-  s.uniforms = u;
-  s.uniform_count = 2;
-
-  renderer_mesh *mp = &m;
-  pipeline_settings *pp = &s;
-
-  state->api.renderer.draw_meshes(1, &mp, &pp, &p);
+void tick(app_state *state) {
+  // TODO
 }
 
 void shutdown(app_state *state) {
+  // TODO
 }
 
 void draw_debug_info(app_state *state) {
   ImGui::Begin("Camera");
   ImGui::DragFloat("Zoom", &state->game.camera.zoom, 0.1f, 0.01f, 100.f);
   ImGui::DragFloat2("Pos", (float *)&state->game.camera.pos);
+  ImGui::ColorEdit3("SunColor", (float *)&state->game.sun_color);
   ImGui::End();
+}
+
+void process_event(app_state *state, event &e) {
+  switch (e.type) {
+  case EVENT_TYPE_NONE:
+    break;
+  case EVENT_TYPE_QUIT:
+    state->running = false;
+    break;
+  case EVENT_TYPE_RESIZE:
+    render_resize(state, e.data.resize.newx, e.data.resize.newy);
+    break;
+  }
 }
 
 extern "C" {
 ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.game.init = init;
-  state->api.game.update = update;
+  state->api.game.render = render;
+  state->api.game.tick = tick;
   state->api.game.shutdown = shutdown;
+  state->api.game.event = process_event;
 
   state->api.game.draw_debug_info = draw_debug_info;
   state->api.game.load_assets = load_assets;

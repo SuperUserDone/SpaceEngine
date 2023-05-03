@@ -6,6 +6,7 @@
 #include "common/win32_export.hh"
 
 #include "glad/gl.c"
+#include "opengl/renderer_framebuffer.hh"
 #include "renderer_draw.hh"
 #include "renderer_mesh.hh"
 #include "renderer_pipeline.hh"
@@ -66,6 +67,11 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.shutdown = renderer_shutdown;
   state->api.renderer.set_viewport = renderer_set_viewport;
   state->api.renderer.clear = renderer_clear;
+
+  state->api.renderer.create_framebuffer = create_framebuffer;
+  state->api.renderer.delete_framebuffer = delete_framebuffer;
+  state->api.renderer.use_framebuffer = use_framebuffer;
+  state->api.renderer.use_default_framebuffer = use_default_framebuffer;
 
   state->api.renderer.create_pipeline = create_pipeline;
   state->api.renderer.delete_pipeline = delete_pipeline;
