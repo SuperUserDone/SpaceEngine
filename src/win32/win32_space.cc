@@ -55,8 +55,10 @@ void run_game_loop(app_state *state) {
   timer_init_subsystem();
   precise_timer delta_timer = timer_create();
   precise_timer time_timer = timer_create();
+  precise_timer tick_timer = timer_create();
 
-  static bool debug_ui = false;
+  bool debug_ui = false;
+  state->tps_target = 60;
 
   while (state->running) {
     arena_clear(state->frame_arena);
@@ -124,6 +126,15 @@ void run_game_loop(app_state *state) {
 
     state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
     state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
+
+    int64_t tick = timer_get_time_us(tick_timer);
+    int64_t time_per_tick = state->tps_target;
+
+    while (tick > time_per_tick) {
+      tick -= time_per_tick;
+      timer_reset_us(tick_timer);
+      state->api.game.tick(state);
+    }
 
     if (state->time.t >= 1024) {
       timer_reset_us(time_timer);

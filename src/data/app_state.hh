@@ -20,6 +20,8 @@ struct app_state {
 
   bool running;
 
+  int tps_target;
+
   struct {
     int w;
     int h;
