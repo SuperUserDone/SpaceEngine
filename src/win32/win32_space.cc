@@ -11,6 +11,7 @@
 #include "tracy/Tracy.hpp"
 #include "win32/win32_data.hh"
 
+#include <SDL_hints.h>
 #include <SDL_timer.h>
 #include <SDL_video.h>
 #include <stdio.h>
@@ -69,7 +70,7 @@ void run_game_loop(app_state *state) {
       while (SDL_PollEvent(&e)) {
         ImGui_ImplSDL2_ProcessEvent(&e);
 
-        event translated = convert_sdl_event(e);
+        event translated = convert_sdl_event(e, ws->window);
 
         if (translated.type != EVENT_TYPE_NONE)
           state->api.game.event(state, translated);
@@ -158,6 +159,10 @@ void run_game_loop(app_state *state) {
 }
 
 void init_sdl() {
+  // FUCKKKKK this took too long to figure out and ended up being so easy
+  // Set dpi aware on windows
+  SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1"); 
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
@@ -168,14 +173,16 @@ void init_sdl() {
 
 void create_window(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
-  ws->window = SDL_CreateWindow("Space Game",
-                                SDL_WINDOWPOS_UNDEFINED,
-                                SDL_WINDOWPOS_UNDEFINED,
-                                800,
-                                600,
-                                SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+  ws->window =
+      SDL_CreateWindow("Space Game",
+                       SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED,
+                       800,
+                       600,
+                       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   ws->glcontext = SDL_GL_CreateContext(ws->window);
   SDL_GL_MakeCurrent(ws->window, ws->glcontext);
+  SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
 }
 
 void copy_dll(char *new_name, const char *dll) {

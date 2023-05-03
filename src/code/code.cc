@@ -19,7 +19,7 @@
 #include "stb/stb_image.h"
 
 void load_assets(app_state *state) {
-  char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
+  char *tonemap_frag = load_file(state->frame_arena, "data/shaders/tonemap.frag.glsl");
   char *default_vert = load_file(state->frame_arena, "data/shaders/default.vert.glsl");
 
   texture_data td;
@@ -36,12 +36,12 @@ void load_assets(app_state *state) {
 
   pipeline_data d;
   d.vertex_shader = default_vert;
-  d.fragment_shader = sol_frag;
-  d.uniform_count = 4;
-  const char *names[] = {"time", "transform", "organic", "sunColor"};
+  d.fragment_shader = tonemap_frag;
+  d.uniform_count = 2;
+  const char *names[] = {"transform", "quad"};
   d.uniform_names = names;
 
-  asset_pipeline_create(state, HASH_KEY("pipeline"), &d);
+  asset_pipeline_create(state, HASH_KEY("Tonemap"), &d);
 
   mesh_data mesh;
   vertex verts[] = {{{100.f, 100.f}, {1.f, 1.f}},

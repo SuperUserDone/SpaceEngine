@@ -2,9 +2,9 @@
 
 #include "data/app_state.hh"
 #include "data/event.hh"
-#include <SDL2/SDL_events.h>
+#include <SDL2/SDL.h>
 
-static inline event convert_sdl_event(SDL_Event &ev) {
+static inline event convert_sdl_event(SDL_Event &ev, SDL_Window *w) {
   event e;
   e.type = EVENT_TYPE_NONE;
 
@@ -16,8 +16,7 @@ static inline event convert_sdl_event(SDL_Event &ev) {
     switch (ev.window.event) {
     case SDL_WINDOWEVENT_RESIZED:
       e.type = EVENT_TYPE_RESIZE;
-      e.data.resize.newx = ev.window.data1;
-      e.data.resize.newy = ev.window.data2;
+      SDL_GL_GetDrawableSize(w, &e.data.resize.newx, &e.data.resize.newy);
       break;
     }
     break;
