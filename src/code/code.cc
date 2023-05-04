@@ -60,7 +60,7 @@ void load_assets(app_state *state) {
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 9.f;
-  state->game.sun_color = {231.f / 255.f, 103.f / 255.f, 16.f / 255.f};
+  state->game.sun_color = {124.f / 255.f, 44.f / 255.f, 0.f / 255.f};
   render_init(state);
 }
 

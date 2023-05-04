@@ -1,5 +1,6 @@
 #include "renderer.hh"
 #include "assetmanager/assetmanager.hh"
+#include "common/file_utils.hh"
 #include "common/hash.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
@@ -31,15 +32,47 @@ static void draw_fullscreen_quad(app_state *state, renderer_pipeline p, renderer
 }
 
 static void draw_star(app_state *state, glm::vec2 pos, float raduis) {
+  glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
+  area /= state->game.camera.zoom;
+
+  glm::mat4 cam =
+      glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f) *
+      glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(pos-state->game.camera.pos, 0.f)),
+                 glm::vec3(raduis));
+
+  renderer_uniform u[4];
+  u[0].type = UNIFORM_TYPE_MAT4;
+  u[0].mat4 = cam;
+  u[0].index = 0;
+  u[1].type = UNIFORM_TYPE_TEXTURE;
+  u[1].texture = asset_texture_get_render(state, HASH_KEY("organic1"));
+  u[1].index = 1;
+  u[2].type = UNIFORM_TYPE_SCALAR;
+  u[2].scalar = state->time.t;
+  u[2].index = 2;
+  u[3].type = UNIFORM_TYPE_VEC3;
+  u[3].vec3 = state->game.sun_color;
+  u[3].index = 3;
+
+  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
+
+  pipeline_settings settings;
+  settings.uniforms = u;
+  settings.uniform_count = 4;
+
+  renderer_mesh *mp = &m;
+  pipeline_settings *pp = &settings;
+
+  renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("solar"));
+
+  state->api.renderer.draw_meshes(1, &mp, &pp, &p);
 }
 
 static void geometry_pass(app_state *state) {
   state->api.renderer.use_framebuffer(asset_framebuffer_get_render(state, HASH_KEY("MainBuffer")));
-  state->api.renderer.clear(0.0, 1.0, 1.0, 1.0);
+  state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
 
-  draw_fullscreen_quad(state,
-                       asset_pipeline_get_render(state, HASH_KEY("Tonemap")),
-                       asset_texture_get_render(state, HASH_KEY("MBTex")));
+  draw_star(state, glm::vec2(-50.f), 100.f);
 }
 
 static void bloom_pass(app_state *state) {
@@ -67,9 +100,25 @@ void render_init(app_state *state) {
   t.format = TEX_FORMAT_RGBA_F16;
   asset_texture_create(state, HASH_KEY("MBTex"), &t);
 
-  framebuffer_data d;
-  d.color_attachment = asset_texture_get_render(state, HASH_KEY("MBTex"));
-  asset_framebuffer_create(state, HASH_KEY("MainBuffer"), &d);
+  framebuffer_data fbd;
+  fbd.color_attachment = asset_texture_get_render(state, HASH_KEY("MBTex"));
+  asset_framebuffer_create(state, HASH_KEY("MainBuffer"), &fbd);
+
+  //
+  // TEMP CODE
+  //
+
+  char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
+  char *default_vert = load_file(state->frame_arena, "data/shaders/default.vert.glsl");
+
+  pipeline_data d;
+  d.vertex_shader = default_vert;
+  d.fragment_shader = sol_frag;
+  d.uniform_count = 4;
+  const char *names[] = {"transform", "organic", "time", "sunColor"};
+  d.uniform_names = names;
+
+  asset_pipeline_create(state, HASH_KEY("solar"), &d);
 }
 
 void render_resize(app_state *state, int x, int y) {

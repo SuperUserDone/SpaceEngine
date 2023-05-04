@@ -35,7 +35,7 @@ float noise( in vec2 p )
 
 void main()
 {
-    vec2 tuv = (uv - vec2(0.5)) * 4.0f;
+    vec2 tuv = (uv - vec2(0.5)) * 3.0f;
 
     float h = length(tuv) > 1.0 ? 0.0 : 1.0;
     
