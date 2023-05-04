@@ -37,8 +37,9 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis) {
 
   glm::mat4 cam =
       glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f) *
-      glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(pos-state->game.camera.pos, 0.f)),
-                 glm::vec3(raduis));
+      glm::scale(glm::translate(glm::mat4(1.f),
+                                glm::vec3(pos - glm::vec2(raduis) - state->game.camera.pos, 0.f)),
+                 glm::vec3(raduis * 2.0));
 
   renderer_uniform u[4];
   u[0].type = UNIFORM_TYPE_MAT4;
@@ -72,7 +73,7 @@ static void geometry_pass(app_state *state) {
   state->api.renderer.use_framebuffer(asset_framebuffer_get_render(state, HASH_KEY("MainBuffer")));
   state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
 
-  draw_star(state, glm::vec2(-50.f), 100.f);
+  draw_star(state, glm::vec2(0.f), 100.f);
 }
 
 static void bloom_pass(app_state *state) {
