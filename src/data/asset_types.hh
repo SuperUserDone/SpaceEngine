@@ -18,6 +18,11 @@ enum texture_formats {
   TEX_FORMAT_SRGBA
 };
 
+enum texture_filter {
+  TEX_FILTER_LINEAR,
+  TEX_FILTER_NEAREST,
+};
+
 struct renderer_texture {
   uint32_t index;
 };
@@ -26,6 +31,8 @@ struct texture_data {
   void *data;
 
   texture_formats format;
+  texture_filter upscale;
+  texture_filter downscale;
 
   uint16_t w;
   uint16_t h;

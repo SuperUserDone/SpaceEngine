@@ -99,6 +99,8 @@ void render_init(app_state *state) {
   t.h = state->window_area.h;
   t.data = nullptr;
   t.format = TEX_FORMAT_RGBA_F16;
+  t.upscale = TEX_FILTER_LINEAR;
+  t.downscale = TEX_FILTER_LINEAR;
   asset_texture_create(state, HASH_KEY("MBTex"), &t);
 
   framebuffer_data fbd;
@@ -128,6 +130,8 @@ void render_resize(app_state *state, int x, int y) {
   t.h = y;
   t.data = nullptr;
   t.format = TEX_FORMAT_RGBA_F16;
+  t.upscale = TEX_FILTER_LINEAR;
+  t.downscale = TEX_FILTER_LINEAR;
   asset_texture_update(state, HASH_KEY("MBTex"), &t);
 }
 

@@ -28,6 +28,8 @@ void load_assets(app_state *state) {
   int x, y;
   td.data = stbi_load("data/textures/organic.jpg", &x, &y, &c, 3);
   td.format = TEX_FORMAT_SRGB;
+  td.downscale = TEX_FILTER_LINEAR;
+  td.upscale = TEX_FILTER_LINEAR;
   td.w = x;
   td.h = y;
 
@@ -42,19 +44,6 @@ void load_assets(app_state *state) {
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("Tonemap"), &d);
-
-  mesh_data mesh;
-  vertex verts[] = {{{100.f, 100.f}, {1.f, 1.f}},
-                    {{100.f, -100.f}, {1.f, 0.f}},
-                    {{-100.f, -100.f}, {0.f, 0.f}},
-                    {{-100.f, 100.f}, {0.f, 1.f}}};
-  uint32_t indicies[] = {0, 1, 2, 0, 2, 3};
-  mesh.verticies = verts;
-  mesh.indicies = indicies;
-  mesh.vertex_count = 4;
-  mesh.index_count = 6;
-
-  asset_mesh_create(state, HASH_KEY("mesh"), &mesh);
 }
 
 void init(app_state *state) {

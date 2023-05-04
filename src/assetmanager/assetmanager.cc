@@ -59,7 +59,7 @@ static void init_default_assets(app_state *state) {
                   vertex{{1.f, 1.f}, {1.f, 1.f}},
                   vertex{{0.f, 1.f}, {0.f, 1.f}}};
     m.verticies = v;
-    uint32_t i[] = {0, 1, 2, 1, 2, 3};
+    uint32_t i[] = {0, 1, 2, 0, 2, 3};
     m.indicies = i;
 
     m.index_count = 6;

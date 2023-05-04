@@ -24,6 +24,16 @@ static inline GLenum tex_type_to_internal_type(texture_formats f) {
   }
 }
 
+static inline GLenum tex_filter_to_gl(texture_filter filter) {
+  switch (filter) {
+  case TEX_FILTER_LINEAR:
+    return GL_LINEAR;
+  case TEX_FILTER_NEAREST:
+    return GL_NEAREST;
+    break;
+  }
+}
+
 static inline GLenum tex_type_to_external(texture_formats f) {
   switch (f) {
   case TEX_FORMAT_R:
@@ -45,8 +55,8 @@ static inline void update_texture(renderer_texture *r, texture_data *data) {
   glBindTexture(GL_TEXTURE_2D, r->index);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter_to_gl(data->downscale));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter_to_gl(data->upscale));
   glTexImage2D(GL_TEXTURE_2D,
                0,
                tex_type_to_internal_type(data->format),
