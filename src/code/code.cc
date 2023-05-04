@@ -38,7 +38,7 @@ void load_assets(app_state *state) {
   d.vertex_shader = default_vert;
   d.fragment_shader = tonemap_frag;
   d.uniform_count = 2;
-  const char *names[] = {"transform", "quad"};
+  const char *names[] = {"transform", "screenTex"};
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("Tonemap"), &d);
