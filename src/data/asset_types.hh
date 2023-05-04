@@ -23,6 +23,11 @@ enum texture_filter {
   TEX_FILTER_NEAREST,
 };
 
+enum texture_edge {
+  TEX_EDGE_CLAMP,
+  TEX_EDGE_REPEAT
+};
+
 struct renderer_texture {
   uint32_t index;
 };
@@ -33,6 +38,8 @@ struct texture_data {
   texture_formats format;
   texture_filter upscale;
   texture_filter downscale;
+
+  texture_edge edge;
 
   uint16_t w;
   uint16_t h;

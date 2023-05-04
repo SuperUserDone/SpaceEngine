@@ -72,8 +72,14 @@ void run_game_loop(app_state *state) {
 
         event translated = convert_sdl_event(e, ws->window);
 
+        if (translated.type == EVENT_TYPE_RESIZE) {
+          state->window_area.w = translated.data.resize.newx;
+          state->window_area.h = translated.data.resize.newy;
+        }
+
         if (translated.type != EVENT_TYPE_NONE)
           state->api.game.event(state, translated);
+
 
         if (e.type == SDL_KEYUP) {
           if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
@@ -119,8 +125,6 @@ void run_game_loop(app_state *state) {
     }
 
     SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
-    state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
-    state->api.renderer.clear(0, 0, 0, 1);
     ImGui_ImplSDL2_NewFrame();
 
     state->api.game.render(state);
@@ -162,7 +166,7 @@ void init_sdl() {
   // FUCKKKKK this took too long to figure out and ended up being so easy
   // Set dpi aware on windows
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
-	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1"); 
+  SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
   SDL_Init(SDL_INIT_VIDEO);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);

@@ -64,6 +64,8 @@ typedef void (*renderer_draw_meshes_fun)(size_t count,
 typedef void (*renderer_imgui_begin_fun)();
 typedef void (*renderer_imgui_end_fun)();
 
+typedef void (*renderer_set_blending_fun)();
+
 struct renderer_api {
   renderer_init_fun init;
   renderer_shutdown_fun shutdown;
@@ -89,5 +91,6 @@ struct renderer_api {
   renderer_draw_meshes_fun draw_meshes;
   renderer_imgui_begin_fun imgui_begin;
   renderer_imgui_begin_fun imgui_end;
+  renderer_set_blending_fun set_blending;
 
 };

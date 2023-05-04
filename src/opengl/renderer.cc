@@ -51,6 +51,12 @@ bool renderer_shutdown() {
   return true;
 }
 
+void renderer_set_blending() {
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE);
+  glBlendEquation(GL_FUNC_ADD);
+}
+
 void imgui_begin() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui::NewFrame();
@@ -88,5 +94,7 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
 
   state->api.renderer.imgui_begin = imgui_begin;
   state->api.renderer.imgui_end = imgui_end;
+
+  state->api.renderer.set_blending = renderer_set_blending;
 }
 }

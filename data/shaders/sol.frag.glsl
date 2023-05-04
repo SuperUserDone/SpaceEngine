@@ -44,9 +44,8 @@ void main()
     float sTime = time * 0.033;
 
     float tsample = texture(organic, starUV + vec2(sTime* 1.5, 0.f)).g;
-    tsample = texture(organic, starUV + vec2(tsample * 0.05 + sTime, 0.0)).r + 0.8;
-    tsample *= 2.0;
-    tsample *= tsample;
+    tsample = texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r;
+    tsample *= 4.0;
 
     vec3 color = vec3(tsample) * sunColor;
     

@@ -4,6 +4,7 @@
 #include "common/hash.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
+#include "data/game_state.hh"
 #include "data/renderer_api.hh"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -70,48 +71,161 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis) {
 }
 
 static void geometry_pass(app_state *state) {
-  state->api.renderer.use_framebuffer(asset_framebuffer_get_render(state, HASH_KEY("MainBuffer")));
+  state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[0]);
+  state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
   state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
 
   draw_star(state, glm::vec2(0.f), 100.f);
 }
 
-static void bloom_pass(app_state *state) {
-  /*glm::uvec2 window = {state->window_area.w, state->window_area.h};
+static void bloom_render_downsample(app_state *state) {
+  pipeline_settings settings;
+  glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
-  while (window.x > 10 && window.y > 10)
-  {
-    window /= 2;
-  } */
+  for (int i = 0; i < state->game.renderer.bloom_iters - 1; i++) {
+
+    glm::vec2 window = state->game.renderer.bloom_viewports[i];
+    glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
+    renderer_uniform u[3];
+    u[0].type = UNIFORM_TYPE_MAT4;
+    u[0].mat4 = mvp;
+    u[0].index = 0;
+    u[1].type = UNIFORM_TYPE_TEXTURE;
+    u[1].texture = state->game.renderer.bloom_buffer_textures[i];
+    u[1].index = 1;
+    u[2].type = UNIFORM_TYPE_VEC2;
+    u[2].vec2 = window;
+    u[2].index = 2;
+
+    renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
+
+    pipeline_settings settings;
+    settings.uniforms = u;
+    settings.uniform_count = 3;
+
+    renderer_mesh *mp = &m;
+    pipeline_settings *pp = &settings;
+
+    state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i + 1]);
+    renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("bloomds"));
+    state->api.renderer.set_viewport(window_smaller.x, window_smaller.y);
+    state->api.renderer.clear(0.f, 0.f, 0.f, 1.f);
+    state->api.renderer.draw_meshes(1, &mp, &pp, &p);
+  }
+}
+
+static void bloom_render_upsample(app_state *state) {
+  pipeline_settings settings;
+  glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
+
+  state->api.renderer.set_blending();
+
+  for (int i = state->game.renderer.bloom_iters - 2; i >= 0; i--) {
+
+    glm::vec2 window = state->game.renderer.bloom_viewports[i];
+    renderer_uniform u[3];
+    u[0].type = UNIFORM_TYPE_MAT4;
+    u[0].mat4 = mvp;
+    u[0].index = 0;
+    u[1].type = UNIFORM_TYPE_TEXTURE;
+    u[1].texture = state->game.renderer.bloom_buffer_textures[i + 1];
+    u[1].index = 1;
+    u[2].type = UNIFORM_TYPE_SCALAR;
+    u[2].scalar = 0.03f;
+    u[2].index = 2;
+
+    renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
+
+    pipeline_settings settings;
+    settings.uniforms = u;
+    settings.uniform_count = 3;
+
+    renderer_mesh *mp = &m;
+    pipeline_settings *pp = &settings;
+
+    state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i]);
+    renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("bloomus"));
+    state->api.renderer.set_viewport(window.x, window.y);
+    state->api.renderer.draw_meshes(1, &mp, &pp, &p);
+  }
+}
+
+static void bloom_pass(app_state *state) {
+  bloom_render_downsample(state);
+  bloom_render_upsample(state);
 }
 
 static void tonemap_pass(app_state *state) {
   state->api.renderer.use_default_framebuffer();
+  state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
   state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
   draw_fullscreen_quad(state,
                        asset_pipeline_get_render(state, HASH_KEY("Tonemap")),
-                       asset_texture_get_render(state, HASH_KEY("MBTex")));
+                       state->game.renderer.bloom_buffer_textures[0]);
+}
+
+static void init_bloom_textures(app_state *state) {
+  glm::uvec2 window = {state->window_area.w, state->window_area.h};
+  state->game.renderer.bloom_iters = MAX_BLOOM_ITERATIONS;
+  for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
+    if ((window.x < 8 || window.y < 8)) {
+      float aspect = (float)window.x / (float)window.y;
+      window = {8, 8 * aspect};
+    }
+
+    texture_data t;
+    t.w = window.x;
+    t.h = window.y;
+    t.data = nullptr;
+    t.format = TEX_FORMAT_RGBA_F16;
+    t.upscale = TEX_FILTER_LINEAR;
+    t.downscale = TEX_FILTER_LINEAR;
+    t.edge = TEX_EDGE_CLAMP;
+    state->game.renderer.bloom_buffer_textures[i] = state->api.renderer.create_texture(&t);
+
+    framebuffer_data fbd;
+    fbd.color_attachment = state->game.renderer.bloom_buffer_textures[i];
+    state->game.renderer.bloom_buffers[i] = state->api.renderer.create_framebuffer(&fbd);
+    state->game.renderer.bloom_viewports[i] = window;
+    window /= 2;
+  }
+}
+
+static void resize_bloom_textures(app_state *state) {
+  glm::uvec2 window = {state->window_area.w, state->window_area.h};
+  state->game.renderer.bloom_iters = MAX_BLOOM_ITERATIONS;
+
+  for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
+    if ((window.x < 8 || window.y < 8)) {
+      float aspect = (float)window.x / (float)window.y;
+      window = {8, 8 * aspect};
+    }
+
+    texture_data t;
+    t.w = window.x;
+    t.h = window.y;
+    t.data = nullptr;
+    t.format = TEX_FORMAT_RGBA_F16;
+    t.upscale = TEX_FILTER_LINEAR;
+    t.downscale = TEX_FILTER_LINEAR;
+    t.edge = TEX_EDGE_CLAMP;
+
+    state->api.renderer.update_texture(&state->game.renderer.bloom_buffer_textures[i], &t);
+    state->game.renderer.bloom_viewports[i] = window;
+    window /= 2;
+  }
 }
 
 void render_init(app_state *state) {
-  texture_data t;
-  t.w = state->window_area.w;
-  t.h = state->window_area.h;
-  t.data = nullptr;
-  t.format = TEX_FORMAT_RGBA_F16;
-  t.upscale = TEX_FILTER_LINEAR;
-  t.downscale = TEX_FILTER_LINEAR;
-  asset_texture_create(state, HASH_KEY("MBTex"), &t);
-
-  framebuffer_data fbd;
-  fbd.color_attachment = asset_texture_get_render(state, HASH_KEY("MBTex"));
-  asset_framebuffer_create(state, HASH_KEY("MainBuffer"), &fbd);
+  init_bloom_textures(state);
 
   //
   // TEMP CODE
   //
 
   char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
+  char *bloomds_frag = load_file(state->frame_arena, "data/shaders/bloomds.frag.glsl");
+  char *bloomus_frag = load_file(state->frame_arena, "data/shaders/bloomus.frag.glsl");
   char *default_vert = load_file(state->frame_arena, "data/shaders/default.vert.glsl");
 
   pipeline_data d;
@@ -122,17 +236,25 @@ void render_init(app_state *state) {
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("solar"), &d);
+
+  d.fragment_shader = bloomds_frag;
+
+  d.uniform_count = 3;
+  const char *bdsnames[] = {"transform", "srcTexture", "srcResolution"};
+  d.uniform_names = bdsnames;
+
+  asset_pipeline_create(state, HASH_KEY("bloomds"), &d);
+
+  d.fragment_shader = bloomus_frag;
+  d.uniform_count = 3;
+  const char *busnames[] = {"transform", "srcTexture", "filterRaduis"};
+  d.uniform_names = busnames;
+
+  asset_pipeline_create(state, HASH_KEY("bloomus"), &d);
 }
 
 void render_resize(app_state *state, int x, int y) {
-  texture_data t;
-  t.w = x;
-  t.h = y;
-  t.data = nullptr;
-  t.format = TEX_FORMAT_RGBA_F16;
-  t.upscale = TEX_FILTER_LINEAR;
-  t.downscale = TEX_FILTER_LINEAR;
-  asset_texture_update(state, HASH_KEY("MBTex"), &t);
+  resize_bloom_textures(state);
 }
 
 void render_game(app_state *state) {

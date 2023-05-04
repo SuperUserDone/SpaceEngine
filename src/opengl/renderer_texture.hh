@@ -50,11 +50,21 @@ static inline GLenum tex_type_to_external(texture_formats f) {
   }
 }
 
+static inline GLenum tex_edge_to_gl(texture_edge e) {
+  switch (e) {
+  case TEX_EDGE_CLAMP:
+    return GL_CLAMP_TO_EDGE;
+  case TEX_EDGE_REPEAT:
+    return GL_REPEAT;
+    break;
+  }
+}
+
 static inline void update_texture(renderer_texture *r, texture_data *data) {
   ZoneScopedN("Update GPU Texture");
   glBindTexture(GL_TEXTURE_2D, r->index);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tex_edge_to_gl(data->edge));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tex_edge_to_gl(data->edge));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex_filter_to_gl(data->downscale));
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex_filter_to_gl(data->upscale));
   glTexImage2D(GL_TEXTURE_2D,

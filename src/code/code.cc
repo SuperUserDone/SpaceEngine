@@ -30,6 +30,7 @@ void load_assets(app_state *state) {
   td.format = TEX_FORMAT_SRGB;
   td.downscale = TEX_FILTER_LINEAR;
   td.upscale = TEX_FILTER_LINEAR;
+  td.edge = TEX_EDGE_REPEAT;
   td.w = x;
   td.h = y;
 
@@ -49,7 +50,7 @@ void load_assets(app_state *state) {
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 9.f;
-  state->game.sun_color = {124.f / 255.f, 44.f / 255.f, 0.f / 255.f};
+  state->game.sun_color = {255.f / 255.f, 113.f / 255.f, 0.f / 255.f};
   render_init(state);
 }
 
