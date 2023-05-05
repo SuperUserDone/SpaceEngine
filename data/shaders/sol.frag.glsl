@@ -37,7 +37,7 @@ void main()
 {
     vec2 tuv = (uv - vec2(0.5)) * 3.0f;
 
-    float h = length(tuv) > 1.0 ? 0.0 : 1.0;
+    float h = step(length(tuv), 1.0); 
     
     vec2 starUV = normalize(tuv)*(2.0*asin(length(tuv)) / 3.1415926);
 
@@ -45,7 +45,7 @@ void main()
 
     float tsample = texture(organic, starUV + vec2(sTime* 1.5, 0.f)).g;
     tsample = texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r;
-    tsample *= 4.0;
+    tsample *= 2.0;
 
     vec3 color = vec3(tsample) * sunColor;
     

@@ -131,7 +131,7 @@ static void bloom_render_upsample(app_state *state) {
     u[1].texture = state->game.renderer.bloom_buffer_textures[i + 1];
     u[1].index = 1;
     u[2].type = UNIFORM_TYPE_SCALAR;
-    u[2].scalar = 0.03f;
+    u[2].scalar = state->game.renderer.bloom_size;
     u[2].index = 2;
 
     renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
@@ -170,7 +170,7 @@ static void init_bloom_textures(app_state *state) {
   for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
     if ((window.x < 8 || window.y < 8)) {
       float aspect = (float)window.x / (float)window.y;
-      window = {8, 8 * aspect};
+      window = {8 * aspect, 8};
     }
 
     texture_data t;
@@ -247,7 +247,7 @@ void render_init(app_state *state) {
 
   d.fragment_shader = bloomus_frag;
   d.uniform_count = 3;
-  const char *busnames[] = {"transform", "srcTexture", "filterRaduis"};
+  const char *busnames[] = {"transform", "srcTexture", "filterRadius"};
   d.uniform_names = busnames;
 
   asset_pipeline_create(state, HASH_KEY("bloomus"), &d);

@@ -21,5 +21,6 @@ struct game_state {
     uint8_t bloom_iters;
 
     glm::vec2 bloom_viewports[MAX_BLOOM_ITERATIONS];
+    float bloom_size;
   } renderer;
 };
