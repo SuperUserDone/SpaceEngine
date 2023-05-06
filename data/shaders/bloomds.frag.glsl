@@ -7,9 +7,27 @@
 
 uniform sampler2D srcTexture;
 uniform vec2 srcResolution;
+uniform bool firstpass;
+uniform vec4 bloomParams; 
 
 in vec2 uv;
 layout (location = 0) out vec4 downsample;
+
+vec3 threshold(vec3 color, float threshold, vec3 curve)
+{
+    float brightness = max(max(color.x, color.y), color.z);
+    float rq = clamp(brightness - curve.x, 0.0, curve.y);
+    rq = (rq * rq) * curve.z;
+    color *= (max(rq, brightness - threshold) / max(brightness, 9.9999997473787516355514526367188e-05));
+    return color;
+}
+
+vec3 prefilter(vec3 color)
+{
+    float clampValue = 20.0;
+    color = clamp(color, vec3(0.0), vec3(clampValue));
+    return threshold(color, bloomParams.x, bloomParams.yzw);
+}
 
 void main()
 {
@@ -58,6 +76,9 @@ void main()
     downsample.rgb += (a+c+g+i)*0.03125;
     downsample.rgb += (b+d+f+h)*0.0625;
     downsample.rgb += (j+k+l+m)*0.125;
+    if(firstpass)
+      downsample.rgb = prefilter(downsample.rgb);
+
     downsample.a = 1.f;
   }
 

@@ -10,10 +10,7 @@
 #include "imgui.h"
 #include "renderer/renderer.hh"
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/geometric.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <math.h>
-#include <stdlib.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -49,9 +46,9 @@ void load_assets(app_state *state) {
 
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
-  state->game.camera.zoom = 9.f;
+  state->game.camera.zoom = 1.f;
   state->game.sun_color = {255.f / 255.f, 113.f / 255.f, 0.f / 255.f};
-  state->game.renderer.bloom_size = 0.0003f;
+  state->game.renderer.bloom_size = 0.00001f;
   render_init(state);
 }
 

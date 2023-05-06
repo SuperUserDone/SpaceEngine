@@ -5,6 +5,7 @@
 
 #include "common/win32_export.hh"
 
+#include "data/renderer_api.hh"
 #include "glad/gl.c"
 #include "opengl/renderer_framebuffer.hh"
 #include "renderer_draw.hh"
@@ -51,10 +52,18 @@ bool renderer_shutdown() {
   return true;
 }
 
-void renderer_set_blending() {
+void renderer_set_blending(blending_func f) {
   glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE);
-  glBlendEquation(GL_FUNC_ADD);
+  switch (f) {
+  case BLEND_ADD:
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_ONE, GL_ONE);
+    break;
+  case BLEND_ONE_MIN_SRC_ALPHA:
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    break;
+  }
 }
 
 void imgui_begin() {

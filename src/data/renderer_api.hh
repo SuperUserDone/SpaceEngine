@@ -8,11 +8,17 @@ typedef loaded_proc (*load_proc)(const char *);
 
 enum uniform_type {
   UNIFORM_TYPE_SCALAR,
+  UNIFORM_TYPE_INTEGER,
   UNIFORM_TYPE_TEXTURE,
   UNIFORM_TYPE_VEC2,
   UNIFORM_TYPE_VEC3,
   UNIFORM_TYPE_VEC4,
   UNIFORM_TYPE_MAT4,
+};
+
+enum blending_func {
+  BLEND_ADD,
+  BLEND_ONE_MIN_SRC_ALPHA,
 };
 
 struct renderer_uniform {
@@ -22,6 +28,7 @@ struct renderer_uniform {
   union {
     renderer_texture texture;
     float scalar;
+    int32_t integer;
     glm::vec2 vec2;
     glm::vec3 vec3;
     glm::vec4 vec4;
@@ -64,7 +71,7 @@ typedef void (*renderer_draw_meshes_fun)(size_t count,
 typedef void (*renderer_imgui_begin_fun)();
 typedef void (*renderer_imgui_end_fun)();
 
-typedef void (*renderer_set_blending_fun)();
+typedef void (*renderer_set_blending_fun)(blending_func f);
 
 struct renderer_api {
   renderer_init_fun init;

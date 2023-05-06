@@ -82,11 +82,13 @@ static void bloom_render_downsample(app_state *state) {
   pipeline_settings settings;
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
+  int32_t firstpass = 1;
+
   for (int i = 0; i < state->game.renderer.bloom_iters - 1; i++) {
 
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
     glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
-    renderer_uniform u[3];
+    renderer_uniform u[5];
     u[0].type = UNIFORM_TYPE_MAT4;
     u[0].mat4 = mvp;
     u[0].index = 0;
@@ -96,12 +98,18 @@ static void bloom_render_downsample(app_state *state) {
     u[2].type = UNIFORM_TYPE_VEC2;
     u[2].vec2 = window;
     u[2].index = 2;
+    u[3].type = UNIFORM_TYPE_VEC4;
+    u[3].vec4 = glm::vec4(1.f, 0.90, 0.20, 2.50);
+    u[3].index = 3;
+    u[4].type = UNIFORM_TYPE_INTEGER;
+    u[4].integer = firstpass;
+    u[4].index = 4;
 
     renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
     pipeline_settings settings;
     settings.uniforms = u;
-    settings.uniform_count = 3;
+    settings.uniform_count = 5;
 
     renderer_mesh *mp = &m;
     pipeline_settings *pp = &settings;
@@ -111,6 +119,8 @@ static void bloom_render_downsample(app_state *state) {
     state->api.renderer.set_viewport(window_smaller.x, window_smaller.y);
     state->api.renderer.clear(0.f, 0.f, 0.f, 1.f);
     state->api.renderer.draw_meshes(1, &mp, &pp, &p);
+
+    firstpass = 0;
   }
 }
 
@@ -118,7 +128,7 @@ static void bloom_render_upsample(app_state *state) {
   pipeline_settings settings;
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
-  state->api.renderer.set_blending();
+  state->api.renderer.set_blending(BLEND_ADD);
 
   for (int i = state->game.renderer.bloom_iters - 2; i >= 0; i--) {
 
@@ -148,6 +158,8 @@ static void bloom_render_upsample(app_state *state) {
     state->api.renderer.set_viewport(window.x, window.y);
     state->api.renderer.draw_meshes(1, &mp, &pp, &p);
   }
+
+  state->api.renderer.set_blending(BLEND_ONE_MIN_SRC_ALPHA);
 }
 
 static void bloom_pass(app_state *state) {
@@ -218,6 +230,7 @@ static void resize_bloom_textures(app_state *state) {
 
 void render_init(app_state *state) {
   init_bloom_textures(state);
+  state->api.renderer.set_blending(BLEND_ONE_MIN_SRC_ALPHA);
 
   //
   // TEMP CODE
@@ -239,8 +252,8 @@ void render_init(app_state *state) {
 
   d.fragment_shader = bloomds_frag;
 
-  d.uniform_count = 3;
-  const char *bdsnames[] = {"transform", "srcTexture", "srcResolution"};
+  d.uniform_count = 5;
+  const char *bdsnames[] = {"transform", "srcTexture", "srcResolution", "bloomParams", "firstpass"};
   d.uniform_names = bdsnames;
 
   asset_pipeline_create(state, HASH_KEY("bloomds"), &d);

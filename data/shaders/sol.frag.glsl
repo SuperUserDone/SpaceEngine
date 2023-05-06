@@ -35,7 +35,7 @@ float noise( in vec2 p )
 
 void main()
 {
-    vec2 tuv = (uv - vec2(0.5)) * 3.0f;
+    vec2 tuv = (uv - vec2(0.5)) * 2.0f;
 
     float h = step(length(tuv), 1.0); 
     
@@ -44,11 +44,11 @@ void main()
     float sTime = time * 0.033;
 
     float tsample = texture(organic, starUV + vec2(sTime* 1.5, 0.f)).g;
-    tsample = texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r;
+    tsample = texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r + 0.7;
     tsample *= 2.0;
 
     vec3 color = vec3(tsample) * sunColor;
-    
   	fragColor.rgb = h*color;
-    fragColor.a = 1.f;
+
+    fragColor.a = h;
 }

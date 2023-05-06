@@ -49,6 +49,9 @@ inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
                          GL_FALSE,
                          (float *)&s->uniforms[i].mat4);
       break;
+    case UNIFORM_TYPE_INTEGER:
+      glUniform1i(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].integer);
+      break;
     }
   }
 }
