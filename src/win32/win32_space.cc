@@ -176,15 +176,15 @@ void run_game_loop(app_state *state) {
 
     // Render Debug UI
     {
-      ImGui_ImplSDL2_NewFrame();
       ZoneScopedN("RenderDebugUI");
-      state->api.renderer.imgui_begin();
-
       if (debug_ui) {
-        state->api.game.draw_debug_info(state);
-      }
+        ImGui_ImplSDL2_NewFrame();
+        state->api.renderer.imgui_begin();
 
-      state->api.renderer.imgui_end();
+        state->api.game.draw_debug_info(state);
+
+        state->api.renderer.imgui_end();
+      }
     }
 
     // Present screen
