@@ -123,8 +123,12 @@ void run_game_loop(app_state *state) {
         }
       }
     }
-
+   
+    int winx, winy;
+    SDL_GetWindowSize(ws->window, &winx, &winy);
     SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
+    state->window_area.dpi_scaling = (float)state->window_area.w / (float)winx; 
+
     ImGui_ImplSDL2_NewFrame();
 
     state->api.game.render(state);

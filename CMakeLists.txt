@@ -20,7 +20,7 @@ add_library(imgui SHARED imgui/backends/imgui_impl_opengl3.cpp imgui/imgui.cpp i
 add_library(space_common SHARED src/common/timer.cc src/common/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)
-add_library(space_renderer STATIC src/renderer/renderer.cc)
+add_library(space_renderer STATIC src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc)
 add_executable(space WIN32 src/win32/win32_space.cc imgui/backends/imgui_impl_sdl2.cpp)
 
 include_directories(tracy/public)

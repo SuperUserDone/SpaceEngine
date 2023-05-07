@@ -25,6 +25,7 @@ struct app_state {
   struct {
     int w;
     int h;
+    float dpi_scaling;
   } window_area;
 
   struct {
