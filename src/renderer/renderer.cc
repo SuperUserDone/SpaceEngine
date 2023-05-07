@@ -2,6 +2,8 @@
 #include "assetmanager/assetmanager.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
+#include "common/memory_arena.hh"
+#include "common/pipeline_settings.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/game_state.hh"
@@ -12,19 +14,11 @@
 static void draw_fullscreen_quad(app_state *state, renderer_pipeline p, renderer_texture tex) {
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
-  renderer_uniform u[2];
-  u[0].type = UNIFORM_TYPE_MAT4;
-  u[0].mat4 = mvp;
-  u[0].index = 0;
-  u[1].type = UNIFORM_TYPE_TEXTURE;
-  u[1].texture = tex;
-  u[1].index = 1;
-
   renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
-  pipeline_settings settings;
-  settings.uniforms = u;
-  settings.uniform_count = 2;
+  pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
+  pipeline_settings_set_uniform(settings, 0, mvp);
+  pipeline_settings_set_uniform(settings, 1, tex);
 
   renderer_mesh *mp = &m;
   pipeline_settings *pp = &settings;
@@ -42,31 +36,19 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis) {
                                 glm::vec3(pos - glm::vec2(raduis) - state->game.camera.pos, 0.f)),
                  glm::vec3(raduis * 2.0));
 
-  renderer_uniform u[4];
-  u[0].type = UNIFORM_TYPE_MAT4;
-  u[0].mat4 = cam;
-  u[0].index = 0;
-  u[1].type = UNIFORM_TYPE_TEXTURE;
-  u[1].texture = asset_texture_get_render(state, HASH_KEY("organic1"));
-  u[1].index = 1;
-  u[2].type = UNIFORM_TYPE_SCALAR;
-  u[2].scalar = state->time.t;
-  u[2].index = 2;
-  u[3].type = UNIFORM_TYPE_VEC3;
-  u[3].vec3 = state->game.sun_color;
-  u[3].index = 3;
-
   renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
-  pipeline_settings settings;
-  settings.uniforms = u;
-  settings.uniform_count = 4;
-
   renderer_mesh *mp = &m;
-  pipeline_settings *pp = &settings;
 
   renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("solar"));
 
+  pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
+  pipeline_settings_set_uniform(settings, 0, cam);
+  pipeline_settings_set_uniform(settings, 1, asset_texture_get_render(state, HASH_KEY("organic1")));
+  pipeline_settings_set_uniform(settings, 2, (float)state->time.t);
+  pipeline_settings_set_uniform(settings, 3, state->game.sun_color);
+
+  pipeline_settings *pp = &settings;
   state->api.renderer.draw_meshes(1, &mp, &pp, &p);
 }
 
@@ -79,7 +61,6 @@ static void geometry_pass(app_state *state) {
 }
 
 static void bloom_render_downsample(app_state *state) {
-  pipeline_settings settings;
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
   int32_t firstpass = 1;
@@ -88,34 +69,22 @@ static void bloom_render_downsample(app_state *state) {
 
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
     glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
-    renderer_uniform u[5];
-    u[0].type = UNIFORM_TYPE_MAT4;
-    u[0].mat4 = mvp;
-    u[0].index = 0;
-    u[1].type = UNIFORM_TYPE_TEXTURE;
-    u[1].texture = state->game.renderer.bloom_buffer_textures[i];
-    u[1].index = 1;
-    u[2].type = UNIFORM_TYPE_VEC2;
-    u[2].vec2 = window;
-    u[2].index = 2;
-    u[3].type = UNIFORM_TYPE_VEC4;
-    u[3].vec4 = glm::vec4(1.f, 0.90, 0.20, 2.50);
-    u[3].index = 3;
-    u[4].type = UNIFORM_TYPE_INTEGER;
-    u[4].integer = firstpass;
-    u[4].index = 4;
-
     renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
-    pipeline_settings settings;
-    settings.uniforms = u;
-    settings.uniform_count = 5;
-
     renderer_mesh *mp = &m;
-    pipeline_settings *pp = &settings;
 
     state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i + 1]);
     renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("bloomds"));
+    pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
+
+    pipeline_settings_set_uniform(settings, 0, mvp);
+    pipeline_settings_set_uniform(settings, 1, state->game.renderer.bloom_buffer_textures[i]);
+    pipeline_settings_set_uniform(settings, 2, window);
+    pipeline_settings_set_uniform(settings, 3, glm::vec4(1.f, 0.9f, 0.2f, 2.5f));
+    pipeline_settings_set_uniform(settings, 4, firstpass);
+
+    pipeline_settings *pp = &settings;
+
     state->api.renderer.set_viewport(window_smaller.x, window_smaller.y);
     state->api.renderer.clear(0.f, 0.f, 0.f, 1.f);
     state->api.renderer.draw_meshes(1, &mp, &pp, &p);
@@ -125,7 +94,6 @@ static void bloom_render_downsample(app_state *state) {
 }
 
 static void bloom_render_upsample(app_state *state) {
-  pipeline_settings settings;
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
   state->api.renderer.set_blending(BLEND_ADD);
@@ -133,28 +101,22 @@ static void bloom_render_upsample(app_state *state) {
   for (int i = state->game.renderer.bloom_iters - 2; i >= 0; i--) {
 
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
-    renderer_uniform u[3];
-    u[0].type = UNIFORM_TYPE_MAT4;
-    u[0].mat4 = mvp;
-    u[0].index = 0;
-    u[1].type = UNIFORM_TYPE_TEXTURE;
-    u[1].texture = state->game.renderer.bloom_buffer_textures[i + 1];
-    u[1].index = 1;
-    u[2].type = UNIFORM_TYPE_SCALAR;
-    u[2].scalar = state->game.renderer.bloom_size;
-    u[2].index = 2;
 
     renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
-    pipeline_settings settings;
-    settings.uniforms = u;
-    settings.uniform_count = 3;
-
     renderer_mesh *mp = &m;
-    pipeline_settings *pp = &settings;
 
     state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i]);
     renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("bloomus"));
+
+    pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
+
+    pipeline_settings_set_uniform(settings, 0, mvp);
+    pipeline_settings_set_uniform(settings, 1, state->game.renderer.bloom_buffer_textures[i + 1]);
+    pipeline_settings_set_uniform(settings, 2, state->game.renderer.bloom_size);
+
+    pipeline_settings *pp = &settings;
+
     state->api.renderer.set_viewport(window.x, window.y);
     state->api.renderer.draw_meshes(1, &mp, &pp, &p);
   }

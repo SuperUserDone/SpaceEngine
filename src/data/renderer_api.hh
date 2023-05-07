@@ -3,43 +3,10 @@
 #include "common/memory_arena.hh"
 #include "data/asset_types.hh"
 
+#include "common/pipeline_settings.hh"
+
 typedef void (*loaded_proc)(void);
 typedef loaded_proc (*load_proc)(const char *);
-
-enum uniform_type {
-  UNIFORM_TYPE_SCALAR,
-  UNIFORM_TYPE_INTEGER,
-  UNIFORM_TYPE_TEXTURE,
-  UNIFORM_TYPE_VEC2,
-  UNIFORM_TYPE_VEC3,
-  UNIFORM_TYPE_VEC4,
-  UNIFORM_TYPE_MAT4,
-};
-
-enum blending_func {
-  BLEND_ADD,
-  BLEND_ONE_MIN_SRC_ALPHA,
-};
-
-struct renderer_uniform {
-  uniform_type type;
-  uint32_t index;
-
-  union {
-    renderer_texture texture;
-    float scalar;
-    int32_t integer;
-    glm::vec2 vec2;
-    glm::vec3 vec3;
-    glm::vec4 vec4;
-    glm::mat4 mat4;
-  };
-};
-
-struct pipeline_settings {
-  renderer_uniform *uniforms;
-  size_t uniform_count;
-};
 
 struct app_state;
 

@@ -48,7 +48,8 @@ void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 1.f;
   state->game.sun_color = {255.f / 255.f, 113.f / 255.f, 0.f / 255.f};
-  state->game.renderer.bloom_size = 0.00001f;
+  state->game.renderer.bloom_size = 0.001f;
+
   render_init(state);
 }
 

@@ -71,8 +71,9 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
   {
     out.uniform_indicies = arena_push_array(rstate->perm_data, size_t, data->uniform_count);
     for (int i = 0; i < data->uniform_count; i++) {
-    out.uniform_indicies[i] = glGetUniformLocation(program, data->uniform_names[i]);
+      out.uniform_indicies[i] = glGetUniformLocation(program, data->uniform_names[i]);
     }
+    out.uniform_count = data->uniform_count;
   }
 
   // Shaders no longer needed, so delete them

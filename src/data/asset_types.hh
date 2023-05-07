@@ -73,6 +73,7 @@ struct pipeline_data {
 
 struct renderer_pipeline {
   uint32_t index;
+  size_t uniform_count;
   size_t *uniform_indicies;
 };
 
