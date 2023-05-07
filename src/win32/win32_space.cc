@@ -199,7 +199,6 @@ void run_game_loop(app_state *state) {
 }
 
 void init_sdl() {
-  // FUCKKKKK this took too long to figure out and ended up being so easy
   // Set dpi aware on windows
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
