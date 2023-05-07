@@ -66,7 +66,7 @@ void shutdown(app_state *state) {
 }
 
 void draw_debug_info(app_state *state) {
-  ImGui::Begin("Camera");
+  ImGui::Begin("DebugSettings");
   ImGui::DragFloat("Zoom", &state->game.camera.zoom, 0.1f, 0.01f, 100.f);
   ImGui::DragFloat2("Pos", (float *)&state->game.camera.pos);
   ImGui::ColorEdit3("SunColor", (float *)&state->game.sun_color);
