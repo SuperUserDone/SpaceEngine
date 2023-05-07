@@ -44,6 +44,47 @@ void init_imgui(app_state *state) {
   ImGui_ImplSDL2_InitForOpenGL(ws->window, ws->glcontext);
 }
 
+void process_sdl_event_internal(SDL_Event &e, app_state *state, bool &debug_ui) {
+  if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
+    // check if buildscript exists
+    if (!(INVALID_FILE_ATTRIBUTES == GetFileAttributes("build-dlls.bat") &&
+          GetLastError() == ERROR_FILE_NOT_FOUND)) {
+      PROCESS_INFORMATION info;
+      STARTUPINFO start_info;
+
+      ZeroMemory(&start_info, sizeof(STARTUPINFO));
+      start_info.cb = sizeof(start_info);
+      ZeroMemory(&info, sizeof(PROCESS_INFORMATION));
+      // TODO Display the output of this on the window using pipes
+
+      // Run the build script
+      char args[] = "/c build-dlls.bat";
+      CreateProcess(TEXT("C:\\Windows\\System32\\cmd.exe"),
+                    TEXT(args),
+                    nullptr,
+                    nullptr,
+                    false,
+                    NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,
+                    nullptr,
+                    nullptr,
+                    &start_info,
+                    &info);
+
+      // Wait until child process exits.
+      WaitForSingleObject(info.hProcess, INFINITE);
+
+      // Close process and thread handles.
+      CloseHandle(info.hProcess);
+      CloseHandle(info.hThread);
+    }
+
+    hotreload_renderer(state);
+    hotreload_code(state);
+  }
+  if (e.key.keysym.scancode == SDL_SCANCODE_F1)
+    debug_ui = !debug_ui;
+}
+
 void run_game_loop(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
 
@@ -62,11 +103,18 @@ void run_game_loop(app_state *state) {
   state->tps_target = 60;
 
   while (state->running) {
-    arena_clear(state->frame_arena);
+    ZoneScopedN("Render");
 
-    SDL_Event e;
+    // Setup
+    {
+      ZoneScopedN("Setup");
+      arena_clear(state->frame_arena);
+    }
+
+    // Process Events
     {
       ZoneScopedN("Process Events");
+      SDL_Event e;
       while (SDL_PollEvent(&e)) {
         ImGui_ImplSDL2_ProcessEvent(&e);
 
@@ -80,87 +128,71 @@ void run_game_loop(app_state *state) {
         if (translated.type != EVENT_TYPE_NONE)
           state->api.game.event(state, translated);
 
-
         if (e.type == SDL_KEYUP) {
-          if (e.key.keysym.scancode == SDL_SCANCODE_F5) {
-            // check if buildscript exists
-            if (!(INVALID_FILE_ATTRIBUTES == GetFileAttributes("build-dlls.bat") &&
-                  GetLastError() == ERROR_FILE_NOT_FOUND)) {
-              PROCESS_INFORMATION info;
-              STARTUPINFO start_info;
-
-              ZeroMemory(&start_info, sizeof(STARTUPINFO));
-              start_info.cb = sizeof(start_info);
-              ZeroMemory(&info, sizeof(PROCESS_INFORMATION));
-              // TODO Display the output of this on the window using pipes
-
-              // Run the build script
-              char args[] = "/c build-dlls.bat";
-              CreateProcess(TEXT("C:\\Windows\\System32\\cmd.exe"),
-                            TEXT(args),
-                            nullptr,
-                            nullptr,
-                            false,
-                            NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,
-                            nullptr,
-                            nullptr,
-                            &start_info,
-                            &info);
-
-              // Wait until child process exits.
-              WaitForSingleObject(info.hProcess, INFINITE);
-
-              // Close process and thread handles.
-              CloseHandle(info.hProcess);
-              CloseHandle(info.hThread);
-            }
-
-            hotreload_renderer(state);
-            hotreload_code(state);
-          }
-          if (e.key.keysym.scancode == SDL_SCANCODE_F1)
-            debug_ui = !debug_ui;
+          process_sdl_event_internal(e, state, debug_ui);
         }
       }
     }
-   
-    int winx, winy;
-    SDL_GetWindowSize(ws->window, &winx, &winy);
-    SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
-    state->window_area.dpi_scaling = (float)state->window_area.w / (float)winx; 
 
-    ImGui_ImplSDL2_NewFrame();
-
-    state->api.game.render(state);
-
-    state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
-    state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
-
-    int64_t tick = timer_get_time_us(tick_timer);
-    int64_t time_per_tick = state->tps_target;
-
-    while (tick > time_per_tick) {
-      tick -= time_per_tick;
-      timer_reset_us(tick_timer);
-      state->api.game.tick(state);
+    // Window stuff
+    {
+      int winx, winy;
+      SDL_GetWindowSize(ws->window, &winx, &winy);
+      SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);
+      state->window_area.dpi_scaling = (float)state->window_area.w / (float)winx;
     }
 
-    if (state->time.t >= 1024) {
-      timer_reset_us(time_timer);
+    // Delta time stuff
+    {
+      state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
+      state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
+      if (state->time.t >= 1024) {
+        timer_reset_us(time_timer);
+      }
+
+      TracyPlot("Delta Time", state->time.dt);
+      TracyPlot("Time", state->time.t);
     }
 
-    TracyPlot("Delta Time", state->time.dt);
-    TracyPlot("Time", state->time.t);
+    // Run game update
+    {
+      ZoneScopedN("ProcessTicks");
+      int64_t tick = timer_get_time_us(tick_timer);
+      int64_t time_per_tick = 1000000 / state->tps_target;
 
-    state->api.renderer.imgui_begin();
-
-    if (debug_ui) {
-      state->api.game.draw_debug_info(state);
+      while (tick > time_per_tick) {
+        tick -= time_per_tick;
+        timer_reset_us(tick_timer);
+        FrameMarkNamed("Tick");
+        state->api.game.tick(state);
+      }
     }
 
-    state->api.renderer.imgui_end();
-    SDL_GL_SwapWindow(ws->window);
-    FrameMark;
+    // Render Screen
+    {
+      ZoneScopedN("Render");
+      state->api.game.render(state);
+    }
+
+    // Render Debug UI
+    {
+      ImGui_ImplSDL2_NewFrame();
+      ZoneScopedN("RenderDebugUI");
+      state->api.renderer.imgui_begin();
+
+      if (debug_ui) {
+        state->api.game.draw_debug_info(state);
+      }
+
+      state->api.renderer.imgui_end();
+    }
+
+    // Present screen
+    {
+      ZoneScopedN("Present");
+      SDL_GL_SwapWindow(ws->window);
+      FrameMark;
+    }
   }
 
   asset_system_shutdown(state);

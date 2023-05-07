@@ -67,13 +67,21 @@ void renderer_set_blending(blending_func f) {
 }
 
 void imgui_begin() {
+  ZoneScopedN("ImguiBegin");
   ImGui_ImplOpenGL3_NewFrame();
   ImGui::NewFrame();
 }
 
 void imgui_end() {
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  ZoneScopedN("ImguiEnd");
+  {
+    ZoneScopedN("ImguiRender");
+    ImGui::Render();
+  }
+  {
+    ZoneScopedN("RenderDrawData");
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  }
 }
 
 extern "C" {
