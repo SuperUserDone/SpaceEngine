@@ -1,14 +1,17 @@
 #include "renderer/render_pass_bloom.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/hash.hh"
+#include <glm/common.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+
+#define min(x, y) (((x) > (y)) ? (y) : (x))
 
 static void bloom_render_downsample(app_state *state) {
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
   int32_t firstpass = 1;
 
-  for (int i = 0; i < state->game.renderer.bloom_iters - 1; i++) {
+  for (int i = 0; i < state->game.renderer.bloom_iters; i++) {
 
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
     glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
@@ -41,7 +44,7 @@ static void bloom_render_upsample(app_state *state) {
 
   state->api.renderer.set_blending(BLEND_ADD);
 
-  for (int i = state->game.renderer.bloom_iters - 2; i >= 0; i--) {
+  for (int i = state->game.renderer.bloom_iters - 1; i >= 0; i--) {
 
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
 
@@ -76,10 +79,6 @@ void render_pass_bloom_init(app_state *state) {
   glm::uvec2 window = {state->window_area.w, state->window_area.h};
   state->game.renderer.bloom_iters = MAX_BLOOM_ITERATIONS;
   for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
-    if ((window.x < 8 || window.y < 8)) {
-      float aspect = (float)window.x / (float)window.y;
-      window = {8 * aspect, 8};
-    }
 
     texture_data t;
     t.w = window.x;
@@ -95,18 +94,19 @@ void render_pass_bloom_init(app_state *state) {
     fbd.color_attachment = state->game.renderer.bloom_buffer_textures[i];
     state->game.renderer.bloom_buffers[i] = state->api.renderer.create_framebuffer(&fbd);
     state->game.renderer.bloom_viewports[i] = window;
+
+    if (window.x < 10 || window.y < 10) {
+      state->game.renderer.bloom_iters = min(i, state->game.renderer.bloom_iters);
+    }
+
     window /= 2;
+    window = glm::max(window, glm::uvec2());
   }
 }
 
 void render_pass_bloom_resize(app_state *state) {
   glm::uvec2 window = {state->window_area.w, state->window_area.h};
   for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
-    if ((window.x < 8 || window.y < 8)) {
-      float aspect = (float)window.x / (float)window.y;
-      window = {8, 8 * aspect};
-    }
-
     texture_data t;
     t.w = window.x;
     t.h = window.y;
@@ -118,6 +118,13 @@ void render_pass_bloom_resize(app_state *state) {
 
     state->api.renderer.update_texture(&state->game.renderer.bloom_buffer_textures[i], &t);
     state->game.renderer.bloom_viewports[i] = window;
+
+    if (window.x < 10 || window.y < 10) {
+      state->game.renderer.bloom_iters = i;
+      break;
+    }
+
     window /= 2;
+    window = glm::max(window, glm::uvec2(1));
   }
 }
