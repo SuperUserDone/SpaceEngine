@@ -13,6 +13,7 @@ struct game_state {
   } camera;
 
   glm::vec3 sun_color;
+  
 
   struct {
     renderer_framebuffer bloom_buffers[MAX_BLOOM_ITERATIONS];
@@ -21,6 +22,7 @@ struct game_state {
     uint8_t bloom_iters;
 
     glm::vec2 bloom_viewports[MAX_BLOOM_ITERATIONS];
+    glm::vec4 bloom_params;
     float bloom_size;
   } renderer;
 };

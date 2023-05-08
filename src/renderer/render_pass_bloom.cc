@@ -26,7 +26,7 @@ static void bloom_render_downsample(app_state *state) {
     pipeline_settings_set_uniform(settings, 0, mvp);
     pipeline_settings_set_uniform(settings, 1, state->game.renderer.bloom_buffer_textures[i]);
     pipeline_settings_set_uniform(settings, 2, window);
-    pipeline_settings_set_uniform(settings, 3, glm::vec4(1.f, 0.9f, 0.2f, 2.5f));
+    pipeline_settings_set_uniform(settings, 3, state->game.renderer.bloom_params);
     pipeline_settings_set_uniform(settings, 4, firstpass);
 
     pipeline_settings *pp = &settings;

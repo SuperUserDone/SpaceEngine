@@ -41,11 +41,11 @@ void main()
     
     vec2 starUV = normalize(tuv)*(2.0*asin(length(tuv)) / 3.1415926);
 
-    float sTime = time * 0.033;
+    float sTime = time * 0.05;
 
     float tsample = texture(organic, starUV + vec2(sTime* 1.5, 0.f)).g;
-    tsample = texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r + 0.7;
-    tsample *= 2.0;
+    tsample = mix(texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r, 1.0f, 0.7f);
+    tsample *= 4.0f;
 
     vec3 color = vec3(tsample) * sunColor;
   	fragColor.rgb = h*color;
