@@ -34,8 +34,8 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
 void render_pass_geometry(app_state *state) {
   state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[0]);
   state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
-  state->api.renderer.clear(0.0, 0.4, 0.6, 1.0);
-  // state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
+  // state->api.renderer.clear(0.0, 0.6, 0.8, 1.0);
+  state->api.renderer.clear(0.05, 0.05, 0.06, 1.0);
 
   draw_star(state, glm::vec2(0.f), 100.f, state->game.sun_color);
 
