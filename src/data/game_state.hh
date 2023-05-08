@@ -1,6 +1,7 @@
 #pragma once
 
 #include "data/asset_types.hh"
+#include "data/game_data.hh"
 #include <glm/glm.hpp>
 #include <stdint.h>
 
@@ -12,8 +13,7 @@ struct game_state {
     float zoom;
   } camera;
 
-  glm::vec3 sun_color;
-  
+  solar_system *solar_system;
 
   struct {
     renderer_framebuffer bloom_buffers[MAX_BLOOM_ITERATIONS];
@@ -24,5 +24,11 @@ struct game_state {
     glm::vec2 bloom_viewports[MAX_BLOOM_ITERATIONS];
     glm::vec4 bloom_params;
     float bloom_size;
+
+    glm::mat4 camv;
+    glm::mat4 camp;
+
+    glm::vec3 clear_color;
+
   } renderer;
 };

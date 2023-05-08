@@ -5,15 +5,11 @@
 #include <glm/ext/matrix_transform.hpp>
 
 static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 color) {
-  glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
-  area /= state->window_area.dpi_scaling;
-  area /= state->game.camera.zoom;
-
-  glm::mat4 cam =
-      glm::ortho(-area.x, area.x, -area.y, area.y, -1.f, 1.f) *
-      glm::scale(glm::translate(glm::mat4(1.f),
-                                glm::vec3(pos - glm::vec2(raduis) - state->game.camera.pos, 0.f)),
+  glm::mat4 model =
+      glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(pos - glm::vec2(raduis), 0.f)),
                  glm::vec3(raduis * 2.0));
+
+  glm::mat4 mvp = state->game.renderer.camp * state->game.renderer.camv * model;
 
   renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
 
@@ -22,7 +18,7 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
   renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("solar"));
 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
-  pipeline_settings_set_uniform(settings, 0, cam);
+  pipeline_settings_set_uniform(settings, 0, mvp);
   pipeline_settings_set_uniform(settings, 1, asset_texture_get_render(state, HASH_KEY("organic1")));
   pipeline_settings_set_uniform(settings, 2, (float)state->time.t);
   pipeline_settings_set_uniform(settings, 3, color);
@@ -34,9 +30,11 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
 void render_pass_geometry(app_state *state) {
   state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[0]);
   state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
-  // state->api.renderer.clear(0.0, 0.6, 0.8, 1.0);
-  state->api.renderer.clear(0.05, 0.05, 0.06, 1.0);
+  glm::vec3 cc = state->game.renderer.clear_color;
+  state->api.renderer.clear(cc.x, cc.y, cc.z, 1.0);
 
-  draw_star(state, glm::vec2(0.f), 100.f, state->game.sun_color);
-
+  draw_star(state,
+            state->game.solar_system->star.pos,
+            state->game.solar_system->star.raduis,
+            state->game.solar_system->star.color);
 }
