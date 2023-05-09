@@ -22,6 +22,7 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
   pipeline_settings_set_uniform(settings, 1, asset_texture_get_render(state, HASH_KEY("organic1")));
   pipeline_settings_set_uniform(settings, 2, (float)state->time.t);
   pipeline_settings_set_uniform(settings, 3, color);
+  pipeline_settings_set_uniform(settings, 4, raduis * state->game.camera.zoom * 100.f);
 
   pipeline_settings *pp = &settings;
   state->api.renderer.draw_meshes(1, &mp, &pp, &p);

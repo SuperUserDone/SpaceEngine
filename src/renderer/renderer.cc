@@ -30,8 +30,8 @@ void render_init(app_state *state) {
   pipeline_data d;
   d.vertex_shader = default_vert;
   d.fragment_shader = sol_frag;
-  d.uniform_count = 4;
-  const char *names[] = {"transform", "organic", "time", "sunColor"};
+  d.uniform_count = 5;
+  const char *names[] = {"transform", "organic", "time", "sunColor", "raduis"};
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("solar"), &d);
