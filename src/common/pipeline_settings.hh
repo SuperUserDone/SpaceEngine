@@ -1,5 +1,7 @@
 #pragma once
 
+// Simple utils to help the user to assign uniforms a bit safer than setting them with arrays.
+
 #include "common/debug.hh"
 #include "common/memory_arena.hh"
 #include "data/asset_types.hh"

@@ -1,4 +1,9 @@
 #pragma once
+
+// This some debug utils.
+//
+// TODO Cleanup as this architecture is a MESS.
+
 #include "common/win32_export.hh"
 #include "stdlib.h"
 

@@ -1,5 +1,7 @@
 #pragma once 
 
+// Timers for deltatime and other misc things.
+
 #include "common/win32_export.hh"
 #include <stdint.h>
 

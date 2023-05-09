@@ -1,5 +1,10 @@
 #pragma once
 
+// This is a implementation of a memory arena based upon the pattern as laid out by ryan fleury on
+// his blog. We use arenas as a supliment to the stack, so that we can move some things off the heap
+// to prevent fragmentation and other issues. The other goal of this is to prevent heap allocations
+// in hot paths and the main loop.
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

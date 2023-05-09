@@ -1,5 +1,7 @@
 #pragma once
 
+// This is a temp piece of code to assist in development to quickly load a file into a string.
+
 #include "common/memory_arena.hh"
 #include <stdio.h>
 

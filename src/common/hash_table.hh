@@ -2,10 +2,11 @@
 
 // This is a very simple hash map implementation using an integer/hashed string as a key, and a
 // pointer to a user defined piece of memory as an output. It is designed to be fast. It uses robin
-// hood hashing. https://cs.uwaterloo.ca/research/tr/1986/CS-86-14.pdf (This might be a better
-// resource https://dspace.mit.edu/bitstream/handle/1721.1/130693/1251799942-MIT.pdf) Allocation is
-// done at the start to avoid a runtime resizing cost by forcing the user to think about how large
-// the hashmap should be. (Expected + 15%)
+// hood hashing from this paper https://cs.uwaterloo.ca/research/tr/1986/CS-86-14.pdf (This might be
+// a better resource to understand the basic working of the implementation
+// https://dspace.mit.edu/bitstream/handle/1721.1/130693/1251799942-MIT.pdf) Allocation is done at
+// the start to avoid a runtime resizing cost by forcing the user to think about how large the
+// hashmap should be. (Expected + 15% Max in my testing, depends on colision frequency)
 
 // Memory is allocated in the given arena and freed at will with arena_clear
 
@@ -80,16 +81,14 @@ static inline void *hash_table_search(hash_table &t, size_t key) {
 
 static inline void hash_table_delete(hash_table &t, size_t key) {
   int64_t loc = _hash_table_get_key_location(t, key);
-  while(loc >= 0) {
+  while (loc >= 0) {
     size_t pl = loc;
     loc = (loc + 1) % t.size;
-    if(t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0)
-    {
+    if (t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0) {
       t.e[pl] = t.e[loc];
-      t.e[pl].cost--; 
-    }
-    else {
-      t.e[pl] = hash_table_entry{0,0,0};
+      t.e[pl].cost--;
+    } else {
+      t.e[pl] = hash_table_entry{0, 0, 0};
       break;
     }
   }

@@ -1,5 +1,10 @@
 #pragma once
 
+// This is a simple pool allocator using the arena allocator as the base. It uses a intrusive linked
+// list to point to free blocks. Freed blocks are added to the front, both to aid in adding a
+// minimal free and realloc cost, and to avoid wasting space. You can imagine it almost like free
+// blocks are inserted into FILO queue
+
 #include "memory_arena.hh"
 #include "win32_export.hh"
 #include <math.h>
@@ -21,6 +26,7 @@ template <typename T>
 static inline mem_pool<T> pool_create(size_t max_elements) {
   mem_pool<T> m;
   m.arena = arena_create(max_elements * sizeof(T));
+  // Some datastructures and primitives can be smaller a void*. Account fot that
   m.obj_size = max(sizeof(T), sizeof(free_block));
   m.first_free = nullptr;
   return m;
