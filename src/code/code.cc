@@ -43,6 +43,34 @@ void load_assets(app_state *state) {
   d.uniform_names = names;
 
   asset_pipeline_create(state, HASH_KEY("Tonemap"), &d);
+
+  char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
+  char *bloomds_frag = load_file(state->frame_arena, "data/shaders/bloomds.frag.glsl");
+  char *bloomus_frag = load_file(state->frame_arena, "data/shaders/bloomus.frag.glsl");
+
+  d.vertex_shader = default_vert;
+  d.fragment_shader = sol_frag;
+  d.uniform_count = 5;
+  const char *snames[] = {"transform", "organic", "time", "sunColor", "raduis"};
+  d.uniform_names = snames;
+
+  asset_pipeline_create(state, HASH_KEY("solar"), &d);
+
+  d.fragment_shader = bloomds_frag;
+
+  d.uniform_count = 5;
+  const char *bdsnames[] = {"transform", "srcTexture", "srcResolution", "bloomParams", "firstpass"};
+  d.uniform_names = bdsnames;
+
+  asset_pipeline_create(state, HASH_KEY("bloomds"), &d);
+
+  d.fragment_shader = bloomus_frag;
+  d.uniform_count = 3;
+  const char *busnames[] = {"transform", "srcTexture", "filterRadius"};
+  d.uniform_names = busnames;
+
+  asset_pipeline_create(state, HASH_KEY("bloomus"), &d);
+
 }
 
 void init(app_state *state) {
