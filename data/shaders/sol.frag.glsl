@@ -14,7 +14,7 @@ void main()
 {
     vec2 tuv = (uv - vec2(0.5)) * 2.0f;
 
-    float h = 1.0 - smoothstep(1.f - 4.f/raduis, 1.0f, length(tuv)); 
+    float h = 1.0 - smoothstep(1.f - 3.f/raduis, 1.0f, length(tuv)); 
     
     vec2 starUV = normalize(tuv)*(2.0*asin(length(tuv)) / PI);
 
