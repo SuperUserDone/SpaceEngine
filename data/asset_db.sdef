@@ -21,4 +21,4 @@
 [pipeline] tonemap
   frag "shaders/tonemap.frag.glsl"
   vert "shaders/default.vert.glsl"
-  uniforms ["transform", "screenTex"];
+  uniforms ["transform", "screenTex"]

@@ -10,7 +10,8 @@ enum token_type {
   TOKEN_NONE,
   TOKEN_LSQUARE,
   TOKEN_RSQUARE,
-  TOKEN_QUOTE,
+  TOKEN_COMMA,
+  TOKEN_STRING,
   TOKEN_IDENTIFIER,
   TOKEN_INTEGER,
   TOKEN_EOF,
@@ -47,18 +48,27 @@ token *get_tokens(mem_arena &temp, const char *str, size_t len, size_t &out_len)
       }
     } else if (base[out_len].type != TOKEN_INTEGER && base[out_len].type != TOKEN_IDENTIFIER) {
       if (str[i] == ' ' || str[i] == '\t' || str[i] == '\n' || str[i] == '\r') {
-        base[out_len].start = str + i;
+        base[out_len].start = str + i + 1;
         continue;
       } else {
+        base[out_len].len = 1;
         if (str[i] == '[') {
           base[out_len].type = TOKEN_LSQUARE;
         } else if (str[i] == ']') {
           base[out_len].type = TOKEN_RSQUARE;
+        } else if (str[i] == ',') {
+          base[out_len].type = TOKEN_COMMA;
         } else if (str[i] == '"') {
-          base[out_len].type = TOKEN_QUOTE;
+          base[out_len].type = TOKEN_STRING;
+          base[out_len].len = 0;
+          i++;
+          base[out_len].start = str + i;
+          while (str[i] != '"' && i < len) {
+            base[out_len].len++;
+            i++;
+          }
+
         }
-    
-        base[out_len].len = 1;
       }
     } else if (base[out_len].type == TOKEN_INTEGER || base[out_len].type == TOKEN_IDENTIFIER) {
       i--;
@@ -68,7 +78,7 @@ token *get_tokens(mem_arena &temp, const char *str, size_t len, size_t &out_len)
     out_len++;
     base[out_len].type = TOKEN_NONE;
     base[out_len].len = 0;
-    base[out_len].start = str + i;
+    base[out_len].start = str + i + 1;
   }
 
   base[out_len].type = TOKEN_EOF;
@@ -81,25 +91,28 @@ void print_tokens(token *tokens, size_t n) {
   for (int i = 0; i < n; i++) {
     switch (tokens[i].type) {
     case TOKEN_NONE:
-      puts("TOKEN_NONE\n");
+      printf("TOKEN_NONE %.*s\n", (int)tokens[i].len, tokens[i].start);
+      break;
+    case TOKEN_COMMA:
+      printf("TOKEN_COMMA %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     case TOKEN_LSQUARE:
-      puts("TOKEN_LSQUARE\n");
+      printf("TOKEN_LSQUARE %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     case TOKEN_RSQUARE:
-      puts("TOKEN_RSQUARE\n");
+      printf("TOKEN_RSQUARE %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
-    case TOKEN_QUOTE:
-      puts("TOKEN_QUOTE\n");
+    case TOKEN_STRING:
+      printf("TOKEN_STRING %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     case TOKEN_IDENTIFIER:
-      puts("TOKEN_IDENTIFIER\n");
+      printf("TOKEN_IDENTIFIER %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     case TOKEN_INTEGER:
-      puts("TOKEN_INTEGER\n");
+      printf("TOKEN_INTEGER %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     case TOKEN_EOF:
-      puts("TOKEN_EOF\n");
+      printf("TOKEN_EOF %.*s\n", (int)tokens[i].len, tokens[i].start);
       break;
     }
   }
