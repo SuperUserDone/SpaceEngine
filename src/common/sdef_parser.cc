@@ -1,10 +1,9 @@
-#pragma once
-
 #include "common/sdef_parser.hh"
 #include "common/memory_arena.hh"
 
 #include <ctype.h>
 #include <stdio.h>
+#include <vcruntime_string.h>
 
 enum token_type {
   TOKEN_NONE,
@@ -34,11 +33,16 @@ token *get_tokens(mem_arena &temp, const char *str, size_t len, size_t &out_len)
   for (int i = 0; i < len; i++) {
 
     if ((str[i] >= '0' && str[i] <= '9')) {
-      if (base[out_len].type == TOKEN_INTEGER || base[out_len].type == TOKEN_NONE) {
+
+      if (base[out_len].type == TOKEN_NONE) {
         base[out_len].type = TOKEN_INTEGER;
+      }
+
+      if (base[out_len].type == TOKEN_INTEGER || base[out_len].type == TOKEN_IDENTIFIER) {
         base[out_len].len++;
         continue;
       }
+
     } else if (((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z') ||
                 str[i] == '_')) {
       if (base[out_len].type == TOKEN_IDENTIFIER || base[out_len].type == TOKEN_NONE) {
@@ -67,7 +71,6 @@ token *get_tokens(mem_arena &temp, const char *str, size_t len, size_t &out_len)
             base[out_len].len++;
             i++;
           }
-
         }
       }
     } else if (base[out_len].type == TOKEN_INTEGER || base[out_len].type == TOKEN_IDENTIFIER) {
@@ -118,13 +121,146 @@ void print_tokens(token *tokens, size_t n) {
   }
 }
 
-ast_node *sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len) {
+bool parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &i) {
+  if (tokens[i].type == TOKEN_IDENTIFIER) {
+    p->name = arena_push_array(arena, char, tokens[i].len + 1);
+    memcpy(p->name, tokens[i].start, tokens[i].len);
+    p->name[tokens[i].len] = 0;
+
+    i++;
+
+    if (tokens[i].type == TOKEN_INTEGER) {
+      p->type = SDEF_TYPE_INTEGER;
+      p->integer = atoi(tokens[i].start);
+
+      i++;
+      return true;
+    } else if (tokens[i].type == TOKEN_STRING) {
+      p->type = SDEF_TYPE_STRING;
+      p->string = arena_push_array(arena, char, tokens[i].len + 1);
+
+      memcpy(p->string, tokens[i].start, tokens[i].len);
+
+      p->string[tokens[i].len] = 0;
+
+      i++;
+      return true;
+    } else if (tokens[i].type == TOKEN_LSQUARE) {
+      i++;
+      p->type = SDEF_TYPE_STRING_ARRAY;
+
+
+      p->string_array = (char *)arena_push(arena, 0);
+      p->array_count = 0;
+
+      while (1) {
+        if (tokens[i].type == TOKEN_COMMA)
+          i++;
+        if (tokens[i].type == TOKEN_RSQUARE) {
+          i++;
+          break;
+        }
+
+        if (tokens[i].type == TOKEN_STRING) {
+          char *arr = arena_push_array(arena, char, tokens[i].len + 1);
+          memcpy(arr, tokens[i].start, tokens[i].len);
+          arr[tokens[i].len] = 0;
+          p->array_count++;
+        }
+
+        i++;
+      }
+
+      return true;
+    }
+  }
+  return false;
+}
+
+size_t count_properties(token *tokens, int i) {
+  size_t count = 0;
+
+  while (1) {
+    if (tokens[i].type == TOKEN_IDENTIFIER) {
+      i++;
+      if (tokens[i].type == TOKEN_INTEGER || tokens[i].type == TOKEN_STRING) {
+        count++;
+        i++;
+        continue;
+      } else if (tokens[i].type == TOKEN_LSQUARE) {
+
+        while (tokens[i++].type != TOKEN_RSQUARE)
+          ;
+
+        count++;
+        continue;
+      }
+    }
+    break;
+  }
+
+  return count;
+}
+
+bool parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i) {
+  if (tokens[i].type == TOKEN_LSQUARE &&        //
+      tokens[i + 1].type == TOKEN_IDENTIFIER && //
+      tokens[i + 2].type == TOKEN_RSQUARE &&    //
+      tokens[i + 3].type == TOKEN_IDENTIFIER) {
+
+    block->type = arena_push_array(arena, char, tokens[i + 1].len + 1);
+    memcpy(block->type, tokens[i + 1].start, tokens[i + 1].len);
+    block->name = arena_push_array(arena, char, tokens[i + 3].len + 1);
+    memcpy(block->name, tokens[i + 3].start, tokens[i + 3].len);
+
+    block->type[tokens[i + 1].len] = 0;
+    block->name[tokens[i + 3].len] = 0;
+
+    i += 4;
+
+    block->property_count = count_properties(tokens, i);
+    block->properties = arena_push_array(arena, sdef_property, block->property_count);
+
+    for (int j = 0; j < block->property_count; j++) {
+      if (!parse_property(arena, &block->properties[j], tokens, i))
+        return false;
+    }
+
+    return true;
+  }
+  return false;
+}
+
+sdef_dom *parse_file(mem_arena &arena, token *tokens, size_t token_count) {
+  sdef_dom *n = arena_push_struct(arena, sdef_dom);
+  n->block_count = 0;
+
+  for (int i = 0; i < token_count; i++) {
+    if (token_count - i > 3 &&                    //
+        tokens[i].type == TOKEN_LSQUARE &&        //
+        tokens[i + 1].type == TOKEN_IDENTIFIER && //
+        tokens[i + 2].type == TOKEN_RSQUARE) {
+      n->block_count++;
+    }
+  }
+
+  int token_index = 0;
+
+  n->blocks = arena_push_array(arena, sdef_block, n->block_count);
+
+  for (int i = 0; i < n->block_count; i++) {
+    if (!parse_block(arena, &n->blocks[i], tokens, token_index))
+      return nullptr;
+  }
+
+  return n;
+}
+
+sdef_dom *sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len) {
   size_t token_count = 0;
   token *tokens = get_tokens(temp_arena, str, len, token_count);
 
   print_tokens(tokens, token_count);
 
-  ast_node *n = arena_push_struct(arena, ast_node);
-
-  return n;
+  return parse_file(arena, tokens, token_count);
 }

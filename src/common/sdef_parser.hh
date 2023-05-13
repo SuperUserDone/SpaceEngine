@@ -8,25 +8,32 @@ enum sdef_type {
   SDEF_TYPE_INTEGER,
   SDEF_TYPE_STRING,
   SDEF_TYPE_STRING_ARRAY,
-  SDEF_TYPE_ROOT,
-  SDEF_TYPE_CORE,
 };
 
-struct ast_node {
+struct sdef_property {
+  char *name;
   sdef_type type;
-
-  const char *name;
 
   union {
     int64_t integer;
-    const char *string;
-    const char **string_array;
-
+    char *string;
     struct {
-      ast_node *children;
-      size_t child_count;
-    } collection;
+      char *string_array;
+      size_t array_count;
+    };
   };
 };
 
-APIFUNC ast_node *sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len);
+struct sdef_block {
+  char *name;
+  char *type;
+  sdef_property *properties;
+  size_t property_count;
+};
+
+struct sdef_dom {
+  sdef_block *blocks;
+  size_t block_count;
+};
+
+APIFUNC sdef_dom *sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len);
