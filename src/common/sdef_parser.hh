@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/memory_arena.hh"
+#include "common/result.hh"
 #include "win32_export.hh"
 #include <stdint.h>
 
@@ -36,4 +37,7 @@ struct sdef_dom {
   size_t block_count;
 };
 
-APIFUNC sdef_dom *sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len);
+APIFUNC result<sdef_dom *> sdef_parse(mem_arena &arena,
+                                      mem_arena &temp_arena,
+                                      const char *str,
+                                      size_t len);
