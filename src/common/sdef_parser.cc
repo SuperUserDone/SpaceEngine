@@ -53,9 +53,13 @@ static inline result<token> eat(token_type type, token *tokens, int &i) {
   if (tokens[i].type == type)
     return result_ok(tokens[i++]);
   else
-    return result_err<token>("Expected token %s but got type %s.",
+    return result_err<token>("Expected token %s but got type %s with value %.*s line %d col %d.",
                              get_token_type_string(type),
-                             get_token_type_string(tokens[i].type));
+                             get_token_type_string(tokens[i].type),
+                             tokens[i].len,
+                             tokens[i].start,
+                             tokens[i].line_num,
+                             tokens[i].col);
 }
 
 static inline bool peek(token_type type, token *tokens, int i) {
@@ -90,52 +94,59 @@ result<token *> get_tokens(mem_arena &temp, const char *str, size_t len, size_t 
       col++;
     }
 
-    while (i < len && ((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z') ||
-                       (str[i] >= '0' && str[i] <= '9') || (str[i] == '_'))) {
-      base[out_len].type = TOKEN_IDENTIFIER;
-      base[out_len].len++;
-      i++;
-      col++;
-    }
+    // We need to exclude already identified tokens here to avoid overwriting exisitng data
+    if (base[out_len].type != TOKEN_INTEGER) {
 
-    if (base[out_len].type != TOKEN_INTEGER && base[out_len].type != TOKEN_IDENTIFIER) {
-      switch (str[i]) {
-      case '\n':
-        line++;
-        col = 0;
-        base[out_len].line_num = line;
-      case ' ':
-      case '\t':
-      case '\r':
-        base[out_len].start = str + i + 1;
-        continue;
-      case '[':
-        base[out_len].type = TOKEN_LSQUARE;
-        base[out_len].len = 1;
-        break;
-      case ']':
-        base[out_len].type = TOKEN_RSQUARE;
-        base[out_len].len = 1;
-        break;
-      case ',':
-        base[out_len].type = TOKEN_COMMA;
-        base[out_len].len = 1;
-        break;
-      case '"':
-        base[out_len].type = TOKEN_STRING;
-        base[out_len].len = 0;
+      // This needs to happen after the integer as we dont want it identifing an integer as an
+      // identifier
+      while (i < len && ((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z') ||
+                         (str[i] >= '0' && str[i] <= '9') || (str[i] == '_'))) {
+        base[out_len].type = TOKEN_IDENTIFIER;
+        base[out_len].len++;
         i++;
         col++;
-        base[out_len].start = str + i;
-        while (i < len && str[i] != '"') {
-          base[out_len].len++;
+      }
+
+      // We need to exclude already identified tokens here to avoid overwriting exisitng data
+      if (base[out_len].type != TOKEN_IDENTIFIER) {
+        switch (str[i]) {
+        case '\n':
+          line++;
+          col = 0;
+          base[out_len].line_num = line;
+        case ' ':
+        case '\t':
+        case '\r':
+          base[out_len].start = str + i + 1;
+          continue;
+        case '[':
+          base[out_len].type = TOKEN_LSQUARE;
+          base[out_len].len = 1;
+          break;
+        case ']':
+          base[out_len].type = TOKEN_RSQUARE;
+          base[out_len].len = 1;
+          break;
+        case ',':
+          base[out_len].type = TOKEN_COMMA;
+          base[out_len].len = 1;
+          break;
+        case '"':
+          base[out_len].type = TOKEN_STRING;
+          base[out_len].len = 0;
           i++;
           col++;
+          base[out_len].start = str + i;
+          while (i < len && str[i] != '"') {
+            base[out_len].len++;
+            i++;
+            col++;
+          }
+          break;
+        default:
+          return result_err<token *>("Lexer: unknown character %c at %d:%d", str[i], line, col);
+          break;
         }
-        break;
-      default:
-        return result_err<token *>("Lexer: unknown character %c at %d:%d", str[i], line, col);
-        break;
       }
     }
 
@@ -250,7 +261,6 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
 
     return result_ok(true);
   }
-
   case TOKEN_LSQUARE: {
     result_forward_err(_, eat(TOKEN_LSQUARE, tokens, i));
     p->type = SDEF_TYPE_STRING_ARRAY;
@@ -279,8 +289,11 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
   }
 
   default:
-    return result_err("Unexpected token %s! Expected TOKEN_INTEGER, TOKEN_STRING or TOKEN_LSQUARE!",
-                      get_token_type_string(peek_type(tokens, i)));
+    return result_err(
+        "Unexpected token %s at %d:%d! Expected TOKEN_INTEGER, TOKEN_STRING or TOKEN_LSQUARE!",
+        get_token_type_string(peek_type(tokens, i)),
+        tokens[i].line_num,
+        tokens[i].col);
     break;
   }
 }
@@ -339,10 +352,11 @@ result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_coun
   n->block_count = 0;
 
   for (int i = 0; i < token_count; i++) {
-    if (token_count - i > 3 &&                    //
-        tokens[i].type == TOKEN_LSQUARE &&        //
-        tokens[i + 1].type == TOKEN_IDENTIFIER && //
-        tokens[i + 2].type == TOKEN_RSQUARE) {
+    if (token_count - i > 3 &&                          //
+        peek_type(tokens, i) == TOKEN_LSQUARE &&        //
+        peek_type(tokens, i + 1) == TOKEN_IDENTIFIER && //
+        peek_type(tokens, i + 2) == TOKEN_RSQUARE &&    //
+        peek_type(tokens, i + 3) == TOKEN_IDENTIFIER) {
       n->block_count++;
     }
   }
@@ -358,7 +372,10 @@ result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_coun
   return result_ok(n);
 }
 
-result<sdef_dom *> sdef_parse(mem_arena &arena, mem_arena &temp_arena, const char *str, size_t len) {
+result<sdef_dom *> sdef_parse(mem_arena &arena,
+                              mem_arena &temp_arena,
+                              const char *str,
+                              size_t len) {
   size_t token_count = 0;
   token *tokens = get_tokens(temp_arena, str, len, token_count);
 
