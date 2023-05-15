@@ -70,7 +70,10 @@ static inline token_type peek_type(token *tokens, int i) {
   return tokens[i].type;
 }
 
-result<token *> get_tokens(mem_arena &temp, const char *str, size_t len, size_t &out_len) {
+static inline result<token *> get_tokens(mem_arena &temp,
+                                         const char *str,
+                                         size_t len,
+                                         size_t &out_len) {
   token *base = arena_push_struct(temp, token);
   base[out_len].type = TOKEN_NONE;
   base[out_len].len = 0;
@@ -94,7 +97,7 @@ result<token *> get_tokens(mem_arena &temp, const char *str, size_t len, size_t 
       col++;
     }
 
-    // We need to exclude already identified tokens here to avoid overwriting exisitng data
+    // We need to exclude already identified tokens here to avoid overwriting existing data
     if (base[out_len].type != TOKEN_INTEGER) {
 
       // This needs to happen after the integer as we dont want it identifing an integer as an
@@ -150,6 +153,7 @@ result<token *> get_tokens(mem_arena &temp, const char *str, size_t len, size_t 
       }
     }
 
+    // Avoid overshooting integers and identifiers
     if (base[out_len].type == TOKEN_INTEGER || base[out_len].type == TOKEN_IDENTIFIER) {
       i--;
       col--;
@@ -237,6 +241,7 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
   result_forward_err(id, eat(TOKEN_IDENTIFIER, tokens, i));
 
   p->name = arena_push_array(arena, char, id.len + 1);
+  // Use a memcpy as it is slightly faster than strcpy and we know the length
   memcpy(p->name, id.start, id.len);
   p->name[id.len] = 0;
 
@@ -255,6 +260,7 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
     p->type = SDEF_TYPE_STRING;
     p->string = arena_push_array(arena, char, string.len + 1);
 
+    // Use a memcpy as it is slightly faster than strcpy and we know the length
     memcpy(p->string, string.start, string.len);
 
     p->string[string.len] = 0;
@@ -268,6 +274,8 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
     p->string_array = (char *)arena_push(arena, 0);
     p->array_count = 0;
 
+    // Read all the elements in the array
+    // Both [ "a" "b" "c" ] and ["a", "b", "c"] are valid
     while (1) {
       if (peek(TOKEN_COMMA, tokens, i)) {
         result_forward_err(_, eat(TOKEN_COMMA, tokens, i));
@@ -337,6 +345,8 @@ result<> parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i)
   block->type[type.len] = 0;
   block->name[name.len] = 0;
 
+  // Not the best design in the world, but we count the number of props to allocate them in a
+  // contiguous block
   block->property_count = count_properties(tokens, i);
   block->properties = arena_push_array(arena, sdef_property, block->property_count);
 
@@ -352,6 +362,8 @@ result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_coun
   n->block_count = 0;
 
   for (int i = 0; i < token_count; i++) {
+    // Not the best design in the world, but we count the number of blocks to allocate them in a
+    // contiguous block
     if (token_count - i > 3 &&                          //
         peek_type(tokens, i) == TOKEN_LSQUARE &&        //
         peek_type(tokens, i + 1) == TOKEN_IDENTIFIER && //
