@@ -1,5 +1,6 @@
 #include "common/sdef_parser.hh"
 #include "common/memory_arena.hh"
+#include "common/memory_scratch_arena.hh"
 #include "common/result.hh"
 
 #include <ctype.h>
@@ -386,16 +387,15 @@ static inline result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, siz
   return result_ok(n);
 }
 
-result<sdef_dom *> sdef_parse(mem_arena &arena,
-                              mem_arena &temp_arena,
-                              const char *str,
-                              size_t len) {
+result<sdef_dom *> sdef_parse(mem_arena &arena, const char *str, size_t len) {
   size_t token_count = 0;
+  mem_scratch_arena temp_arena = arena_scratch_get();
+
   token *tokens = get_tokens(temp_arena, str, len, token_count);
 
   result<sdef_dom *> dom = parse_file(arena, tokens, token_count);
-  // We no longer need the tokens
-  arena_pop_to(temp_arena, tokens);
+
+  arena_scratch_free(temp_arena);
 
   return dom;
 }

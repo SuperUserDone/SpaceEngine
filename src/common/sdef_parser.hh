@@ -55,6 +55,5 @@ struct sdef_dom {
 };
 
 APIFUNC result<sdef_dom *> sdef_parse(mem_arena &arena,
-                                      mem_arena &temp_arena,
                                       const char *str,
                                       size_t len);

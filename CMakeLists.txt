@@ -20,7 +20,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(src imgui)
 
 add_library(imgui SHARED imgui/backends/imgui_impl_opengl3.cpp imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_demo.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp)
-add_library(space_common SHARED src/common/sdef_parser.cc src/common/timer.cc src/common/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc)
+add_library(space_common SHARED src/common/memory_scratch_arena.cc src/common/sdef_parser.cc src/common/timer.cc src/common/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)
 add_library(space_renderer STATIC src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc)
