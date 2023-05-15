@@ -1,9 +1,9 @@
 #pragma once
 
-// This is a implementation of a memory arena based upon the pattern as laid out by ryan fleury on
-// his blog. We use arenas as a supliment to the stack, so that we can move some things off the heap
-// to prevent fragmentation and other issues. The other goal of this is to prevent heap allocations
-// in hot paths and the main loop.
+// This is a implementation of a memory arena. We use arenas as a supliment to the stack, so that
+// we can move some things off the heap to prevent fragmentation and other issues. The other goal of
+// this is to prevent heap allocations in hot paths and the main loop. In a ideal world no heap
+// allocations would be neccacary, and I am trying my best to ensure that
 
 #include <stdint.h>
 #include <stdio.h>
@@ -12,40 +12,57 @@
 #include "common/debug.hh"
 #include "win32_export.hh"
 
+// Define some helpers that dont need to be their own functions.
 #define arena_push_struct(arena, struct) (struct *)arena_push_zero(arena, sizeof(struct))
 #define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct))
 #define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * (len))
 #define arena_push_array_zero(arena, type, len) (type *)arena_push_zero(arena, sizeof(type) * (len))
 
 struct mem_arena {
+  mem_arena() = default;
+  mem_arena(mem_arena &&other) = default;
+
+  mem_arena &operator=(mem_arena &&other) = default;
+
   void *base;
   size_t size;
   size_t allocated_size;
   size_t max_size;
   size_t alignment;
+
+private:
+  // Delete the copy ctor & copy assignment as arenas are intended to be passed by reference.
+  mem_arena(const mem_arena &other) = delete;
+  mem_arena &operator=(const mem_arena &other) = default;
 };
 
+// Platform specific funtions are extracted to the cc file, as we dont want to pollute the namespace
+// with platform apis and windows #defines
 APIFUNC extern mem_arena arena_create(size_t max_size = 0);
 APIFUNC extern void arena_grow(mem_arena &arena, size_t min_size);
 APIFUNC extern void arena_free(mem_arena &arena);
 
 static inline void arena_set_alignment(mem_arena &a, size_t alignment) {
   SPACE_ASSERT(alignment > 0, "Arena alignment must not be 0!");
-
   SPACE_ASSERT(a.size < 0, "Arena alignment cannot be set after creating!");
 
   a.alignment = alignment;
 }
 
+// The push function is declared in the header to allow more inlining and such.
 static inline void *arena_push(mem_arena &arena, size_t size) {
+  // Grow the arena if it is too small
   if (arena.size + size >= arena.allocated_size) {
     arena_grow(arena, arena.size + size);
   }
 
+  // Alignment
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
+  // Find the address of the top of the arena
   void *base = (void *)((size_t)arena.base + arena.size);
 
+  // Mark the memory as used
   arena.size += size;
 
   return base;
@@ -60,8 +77,10 @@ static inline void *arena_push_zero(mem_arena &arena, size_t size) {
 }
 
 static inline void arena_pop(mem_arena &arena, size_t size) {
+  // Align the value
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
+  // Mark the memory as availabe to be reused
   arena.size -= size;
 }
 

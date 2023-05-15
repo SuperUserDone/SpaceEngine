@@ -87,9 +87,10 @@ static inline result<token *> get_tokens(mem_arena &temp,
   size_t col = 1;
 
   for (int i = 0; i < len; i++, col++) {
-
+    // Set the col in the event it changed in the last itteration.
     base[out_len].col = col;
 
+    // Parse out integers
     while (i < len && (str[i] >= '0' && str[i] <= '9')) {
       base[out_len].type = TOKEN_INTEGER;
       base[out_len].len++;
@@ -237,7 +238,7 @@ void print_tokens(token *tokens, size_t n) {
   }
 }
 
-result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &i) {
+static inline result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &i) {
   result_forward_err(id, eat(TOKEN_IDENTIFIER, tokens, i));
 
   p->name = arena_push_array(arena, char, id.len + 1);
@@ -288,6 +289,7 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
 
       result_forward_err(string, eat(TOKEN_STRING, tokens, i));
       char *arr = arena_push_array(arena, char, string.len + 1);
+      // Memcpy faster than strcpy
       memcpy(arr, string.start, string.len);
       arr[string.len] = 0;
       p->array_count++;
@@ -306,7 +308,7 @@ result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &
   }
 }
 
-size_t count_properties(token *tokens, int i) {
+static inline size_t count_properties(token *tokens, int i) {
   size_t count = 0;
 
   while (1) {
@@ -331,7 +333,7 @@ size_t count_properties(token *tokens, int i) {
   return count;
 }
 
-result<> parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i) {
+static inline result<> parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i) {
   result_forward_err(_l, eat(TOKEN_LSQUARE, tokens, i));
   result_forward_err(type, eat(TOKEN_IDENTIFIER, tokens, i));
   result_forward_err(_r, eat(TOKEN_RSQUARE, tokens, i));
@@ -357,7 +359,7 @@ result<> parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i)
   return result_ok(true);
 }
 
-result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_count) {
+static inline result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_count) {
   sdef_dom *n = arena_push_struct(arena, sdef_dom);
   n->block_count = 0;
 
@@ -391,5 +393,9 @@ result<sdef_dom *> sdef_parse(mem_arena &arena,
   size_t token_count = 0;
   token *tokens = get_tokens(temp_arena, str, len, token_count);
 
-  return parse_file(arena, tokens, token_count);
+  result<sdef_dom *> dom = parse_file(arena, tokens, token_count);
+  // We no longer need the tokens
+  arena_pop_to(temp_arena, tokens);
+
+  return dom;
 }

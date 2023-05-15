@@ -45,12 +45,12 @@ struct result {
     return value;
   }
 
+  // Only used to copy using the arena_forward_err macro above
   template <typename K>
   result(result<K> &res) {
     this->type = res.type;
-    if (!res.ok()) {
-      this->error = res.error;
-    }
+    SPACE_ASSERT(!res.ok(), "Copying an error from an result with no error");
+    this->error = res.error;
   }
 
   result() {
@@ -87,14 +87,15 @@ template <typename T = bool, typename... args>
 static inline result<T> result_err(const char *err, args... a) {
   result<T> r;
 
+  // TODO better way to do this?
   int sz = snprintf(nullptr, 0, err, a...);
-
   char *err_buf = (new char[sz + 1]);
-
   sprintf_s(err_buf, sz + 1, err, a...);
 
   r.error = err_buf;
   r.type = RESULT_ERR;
+
+  delete[] err_buf;
 
   return r;
 }

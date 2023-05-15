@@ -1,6 +1,7 @@
-#pragma once 
+#pragma once
 
-// Timers for deltatime and other misc things.
+// Timers for deltatime and other misc things. Implementation should be with the highest accuracy
+// available timer on the platform like GetPerformaceCounter on Windows
 
 #include "common/win32_export.hh"
 #include <stdint.h>

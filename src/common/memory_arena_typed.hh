@@ -6,7 +6,12 @@
 
 template <typename T>
 struct mem_arena_typed {
+  mem_arena_typed() = default;
   mem_arena arena;
+
+private:
+  // Delete the copy ctor as arenas are intended to be passed by reference.
+  mem_arena_typed(const mem_arena &other) = delete;
 };
 
 template <typename T>

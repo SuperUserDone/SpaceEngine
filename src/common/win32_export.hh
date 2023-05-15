@@ -1,5 +1,7 @@
 #pragma once
 
+// Standard windows shite
+
 #ifndef APIFUNC
 
 #ifdef _WIN32

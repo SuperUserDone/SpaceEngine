@@ -1,6 +1,7 @@
 #pragma once
 
-// Simple utils to help the user to assign uniforms a bit safer than setting them with arrays.
+// Simple utils to help the user to assign uniforms a bit safer than setting them with arrays. It
+// does simple type checking too
 
 #include "common/debug.hh"
 #include "common/memory_arena.hh"
