@@ -4,6 +4,7 @@
 #include "common/win32_export.hh"
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
+#include "common/result.hh"
 
 struct asset_descriptor {
   asset_type type;
@@ -27,4 +28,4 @@ struct asset_set {
   size_t count;
 };
 
-APIFUNC asset_set asset_set_load_from_file(mem_arena &arena, const char *filename);
+APIFUNC result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filename);
