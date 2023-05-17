@@ -13,7 +13,6 @@ struct asset_descriptor {
     struct {
       texture_filter upsample;
       texture_filter downsample;
-      texture_formats format;
       const char *file_path;
     } texture;
     struct {
