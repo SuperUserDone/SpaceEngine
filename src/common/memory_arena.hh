@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <vcruntime_string.h>
 
 #include "common/debug.hh"
 #include "win32_export.hh"
@@ -17,6 +18,7 @@
 #define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct))
 #define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * (len))
 #define arena_push_array_zero(arena, type, len) (type *)arena_push_zero(arena, sizeof(type) * (len))
+#define arena_push_null_terminated_string(arena, str) arena_push_string(arena, str, strlen(str));
 
 struct mem_arena {
   mem_arena() = default;
@@ -92,4 +94,10 @@ static inline void arena_pop_to(mem_arena &arena, void *address) {
 
 static inline void arena_clear(mem_arena &arena) {
   arena.size = 0;
+}
+
+static inline const char *arena_push_string(mem_arena &arena, const char *str, size_t len) {
+  char *new_str = arena_push_array(arena, char, len + 1);
+  memcpy(new_str, str, len + 1);
+  return new_str;
 }
