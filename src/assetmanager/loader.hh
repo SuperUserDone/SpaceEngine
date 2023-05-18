@@ -11,19 +11,19 @@
 
 struct asset_data {
   asset_type type;
-  
+  const char *name;
+
   union {
     texture_data texture;
-    pipeline_data data;
+    pipeline_data pipeline;
   };
 };
 
 struct load_result {
   std::atomic_int semaphore;
-  mem_arena_typed<asset_data> set;
-  void *base;
+  asset_data *set;
   size_t count;
 };
 
-APIFUNC void asset_loader_upload_to_vram(app_state *state, load_result result);
-APIFUNC load_result *asset_loader_load(mem_arena &arena, app_state *state, asset_set &set);
+APIFUNC void asset_loader_upload_to_vram(app_state *state, load_result *result);
+APIFUNC load_result *asset_loader_load_sync(mem_arena &arena, app_state *state, const asset_set &set);

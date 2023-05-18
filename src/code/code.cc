@@ -1,8 +1,11 @@
+#include "assetmanager/asset_set.hh"
 #include "assetmanager/assetmanager.hh"
+#include "assetmanager/loader.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
 #include "common/hash_table.hh"
 #include "common/memory_arena.hh"
+#include "common/memory_scratch_arena.hh"
 #include "common/win32_export.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
@@ -13,64 +16,13 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <math.h>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
 void load_assets(app_state *state) {
-  char *tonemap_frag = load_file(state->frame_arena, "data/shaders/tonemap.frag.glsl");
-  char *default_vert = load_file(state->frame_arena, "data/shaders/default.vert.glsl");
-
-  texture_data td;
-
-  int c;
-  int x, y;
-  td.data = stbi_load("data/textures/organic.jpg", &x, &y, &c, 3);
-  td.format = TEX_FORMAT_SRGB;
-  td.downscale = TEX_FILTER_LINEAR;
-  td.upscale = TEX_FILTER_LINEAR;
-  td.edge = TEX_EDGE_REPEAT;
-  td.w = x;
-  td.h = y;
-
-  asset_texture_create(state, HASH_KEY("organic1"), &td);
-  stbi_image_free(td.data);
-
-  pipeline_data d;
-  d.vertex_shader = default_vert;
-  d.fragment_shader = tonemap_frag;
-  d.uniform_count = 2;
-  const char *names[] = {"transform", "screenTex"};
-  d.uniform_names = names;
-
-  asset_pipeline_create(state, HASH_KEY("Tonemap"), &d);
-
-  char *sol_frag = load_file(state->frame_arena, "data/shaders/sol.frag.glsl");
-  char *bloomds_frag = load_file(state->frame_arena, "data/shaders/bloomds.frag.glsl");
-  char *bloomus_frag = load_file(state->frame_arena, "data/shaders/bloomus.frag.glsl");
-
-  d.vertex_shader = default_vert;
-  d.fragment_shader = sol_frag;
-  d.uniform_count = 5;
-  const char *snames[] = {"transform", "organic", "time", "sunColor", "raduis"};
-  d.uniform_names = snames;
-
-  asset_pipeline_create(state, HASH_KEY("solar"), &d);
-
-  d.fragment_shader = bloomds_frag;
-
-  d.uniform_count = 5;
-  const char *bdsnames[] = {"transform", "srcTexture", "srcResolution", "bloomParams", "firstpass"};
-  d.uniform_names = bdsnames;
-
-  asset_pipeline_create(state, HASH_KEY("bloomds"), &d);
-
-  d.fragment_shader = bloomus_frag;
-  d.uniform_count = 3;
-  const char *busnames[] = {"transform", "srcTexture", "filterRadius"};
-  d.uniform_names = busnames;
-
-  asset_pipeline_create(state, HASH_KEY("bloomus"), &d);
-
+  mem_scratch_arena arena = arena_scratch_get();
+  asset_set set = asset_set_load_from_file(arena, "data/asset_db.sdef");
+  load_result * res = asset_loader_load_sync(arena, state, set);
+  asset_loader_upload_to_vram(state, res);
 }
 
 void init(app_state *state) {
@@ -110,10 +62,14 @@ void draw_debug_info(app_state *state) {
 
   ImGui::ColorEdit3("SunColor", (float *)&state->game.solar_system->star.color);
   ImGui::ColorEdit3("ClearColor", (float *)&state->game.renderer.clear_color);
- 
-  ImGui::DragFloat4("Bloom Threshold", (float*)&state->game.renderer.bloom_params, 0.01, 0.f, 10.f);
+
+  ImGui::DragFloat4("Bloom Threshold",
+                    (float *)&state->game.renderer.bloom_params,
+                    0.01,
+                    0.f,
+                    10.f);
   ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.00001f, 0.f, 1.f);
- 
+
   ImGui::End();
 }
 

@@ -9,10 +9,7 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
       glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(pos - glm::vec2(raduis), 0.f)),
                  glm::vec3(raduis * 2.0));
 
-  glm::mat4 mvp = state->game.renderer.camp * state->game.renderer.camv * model;
-
-  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
-
+  glm::mat4 mvp = state->game.renderer.camp * state->game.renderer.camv * model; renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
   renderer_mesh *mp = &m;
 
   renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("solar"));
