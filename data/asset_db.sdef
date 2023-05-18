@@ -16,7 +16,7 @@
 [pipeline] bloomds
   frag "data/shaders/bloomds.frag.glsl"
   vert "data/shaders/default.vert.glsl"
-  uniforms ["transform", "srcTexture", "srcResolution", "firstpass", "bloomParams"]
+  uniforms ["transform", "srcTexture", "srcResolution", "bloomParams", "firstpass"]
 
 [pipeline] tonemap
   frag "data/shaders/tonemap.frag.glsl"

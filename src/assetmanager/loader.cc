@@ -1,6 +1,7 @@
 #include "loader.hh"
 #include "assetmanager/asset_set.hh"
 #include "assetmanager/assetmanager.hh"
+#include "common/debug.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
 #include "common/memory_arena.hh"
@@ -20,6 +21,7 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
 
   void *new_data = arena_push(arena, x * y * c);
   memcpy(new_data, data, x * y * c);
+
   stbi_image_free(data);
 
   asset_data a;
@@ -38,13 +40,13 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
     a.texture.format = TEX_FORMAT_RG;
     break;
   case 3:
-    a.texture.format = TEX_FORMAT_RGB;
+    a.texture.format = TEX_FORMAT_SRGB;
     break;
   case 4:
-    a.texture.format = TEX_FORMAT_RGBA;
+    a.texture.format = TEX_FORMAT_SRGBA;
     break;
   default:
-    return result_err<asset_data>("Texture file has an unsupporrted number of channels %d", c);
+    return result_err<asset_data>("Texture file has an unsupported number of channels %d", c);
   }
 
   return result_ok(a);

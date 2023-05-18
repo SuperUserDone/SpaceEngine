@@ -53,6 +53,9 @@ void arena_grow(mem_arena &arena, size_t min_size) {
 
   // Now we can commit the already reserved memory MAKE SURE IT IS RW NOT RWX
   void *a = VirtualAlloc(arena.base, alloc, MEM_COMMIT, PAGE_READWRITE);
+    
+  arena.allocated_size = alloc;
+
   SPACE_ASSERT(a, "Failed to commit arena memory!")
 }
 

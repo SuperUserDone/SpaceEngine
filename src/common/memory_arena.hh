@@ -62,7 +62,7 @@ static inline void *arena_push(mem_arena &arena, size_t size) {
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   // Find the address of the top of the arena
-  void *base = (void *)((size_t)arena.base + arena.size);
+  void *base = (void *)((uint8_t*)arena.base + arena.size);
 
   // Mark the memory as used
   arena.size += size;
