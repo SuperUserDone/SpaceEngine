@@ -1,7 +1,7 @@
 [texture] organic1
   upsample "BILINEAR"
   downsample "BILINEAR"
-  file_path "textures/organic.jpg"
+  path "textures/organic.jpg"
 
 [pipeline] sun
   frag "shaders/sol.frag.glsl"

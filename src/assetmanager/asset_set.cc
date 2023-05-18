@@ -56,7 +56,7 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
       downsample_defined = true;
 
       descriptor.texture.downsample = tex_filter_string_to_filter(block.properties[i].string);
-    } else if (strcmp(block.properties[i].name, "file")) {
+    } else if (strcmp(block.properties[i].name, "path") == 0) {
       if (block.properties[i].type != SDEF_TYPE_STRING)
         return result_err("In texture %s, the value of file must be a string", descriptor.name);
       if (path_defined)
@@ -67,6 +67,10 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
       descriptor.texture.file_path =
           arena_push_null_terminated_string(arena, block.properties[i].string);
       path_defined = true;
+    } else {
+      return result_err("In texture %s, unknown property %s",
+                        descriptor.name,
+                        block.properties[i].name);
     }
   }
 
@@ -76,6 +80,76 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
     return result_err("In texture %s downsample was not defined", descriptor.name);
   if (!path_defined)
     return result_err("In texture %s a path was not defined", descriptor.name);
+
+  return result_ok(true);
+}
+
+result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
+  bool frag_defined = false;
+  bool vert_defined = false;
+  bool uniform_defined = false;
+
+  for (int i = 0; i < block.property_count; i++) {
+    if (strcmp(block.properties[i].name, "vert") == 0) {
+      if (block.properties[i].type != SDEF_TYPE_STRING)
+        return result_err("In pipeline %s, the value of vertex shader path must be a string",
+                          descriptor.name);
+      if (vert_defined)
+        return result_err("In pipeline %s, vertex shader redefined as %s",
+                          descriptor.name,
+                          block.properties[i].string);
+
+      descriptor.pipeline.vertex =
+          arena_push_null_terminated_string(arena, block.properties[i].string);
+      vert_defined = true;
+    } else if (strcmp(block.properties[i].name, "frag") == 0) {
+      if (block.properties[i].type != SDEF_TYPE_STRING)
+        return result_err("In pipeline %s, the value of fragment shader path must be a string",
+                          descriptor.name);
+      if (frag_defined)
+        return result_err("In pipeline %s, fragment shader redefined as %s",
+                          descriptor.name,
+                          block.properties[i].string);
+
+      descriptor.pipeline.fragment =
+          arena_push_null_terminated_string(arena, block.properties[i].string);
+      frag_defined = true;
+    } else if (strcmp(block.properties[i].name, "uniforms") == 0) {
+      if (block.properties[i].type != SDEF_TYPE_STRING_ARRAY)
+        return result_err("In pipeline %s, the value of uniforms must be an array",
+                          descriptor.name);
+      if (uniform_defined)
+        return result_err("In pipeline %s, uniforms redefined as %s", descriptor.name);
+
+      char *uniforms_info =
+          arena_push_string(arena, block.properties[i].string_array, block.properties[i].total_len);
+
+      size_t j = 0;
+
+      descriptor.pipeline.uniforms = (char **)arena_push(arena, 0);
+      descriptor.pipeline.uniforms_count = 0;
+
+      while (j < block.properties[i].total_len) {
+        size_t len = strlen(&uniforms_info[j]);
+        arena_push(arena, sizeof(char *));
+        descriptor.pipeline.uniforms[descriptor.pipeline.uniforms_count++] = &uniforms_info[j];
+        j += len + 1;
+      }
+
+      uniform_defined = true;
+    } else {
+      return result_err("In pipeline %s, unknown property %s",
+                        descriptor.name,
+                        block.properties[i].name);
+    }
+  }
+
+  if (!frag_defined)
+    return result_err("In pipeline %s fragment shader was not defined", descriptor.name);
+  if (!vert_defined)
+    return result_err("In pipeline %s vertex shader was not defined", descriptor.name);
+  if (!uniform_defined)
+    return result_err("In pipeline %s no unifroms was not defined", descriptor.name);
 
   return result_ok(true);
 }
@@ -96,11 +170,14 @@ result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filenam
     s.descriptors[i].name = arena_push_null_terminated_string(arena, dom->blocks[i].name);
 
     switch (type) {
-    case ASSET_TYPE_TEXTURE:
-      parse_texture(arena, dom->blocks[i], s.descriptors[i]);
+    case ASSET_TYPE_TEXTURE: {
+      result_forward_err(_, parse_texture(arena, dom->blocks[i], s.descriptors[i]));
       break;
-    case ASSET_TYPE_PIPELINE:
+    }
+    case ASSET_TYPE_PIPELINE: {
+      result_forward_err(_, parse_pipeline(arena, dom->blocks[i], s.descriptors[i]));
       break;
+    }
     default:
       // Should not happen
       return result_err<asset_set>("Type was not found");
