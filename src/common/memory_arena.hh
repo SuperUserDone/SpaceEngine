@@ -96,8 +96,8 @@ static inline void arena_clear(mem_arena &arena) {
   arena.size = 0;
 }
 
-static inline const char *arena_push_string(mem_arena &arena, const char *str, size_t len) {
-  char *new_str = arena_push_array(arena, char, len + 1);
-  memcpy(new_str, str, len + 1);
+static inline char *arena_push_string(mem_arena &arena, const char *str, size_t len) {
+  memcpy(new_str, str, len);
+  new_str[len] = 0; 
   return new_str;
 }

@@ -38,6 +38,7 @@ struct sdef_property {
     struct {
       char *string_array;
       size_t array_count;
+      size_t total_len;
     };
   };
 };

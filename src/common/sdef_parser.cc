@@ -275,6 +275,7 @@ static inline result<> parse_property(mem_arena &arena, sdef_property *p, token 
 
     p->string_array = (char *)arena_push(arena, 0);
     p->array_count = 0;
+    p->total_len = 0;
 
     // Read all the elements in the array
     // Both [ "a" "b" "c" ] and ["a", "b", "c"] are valid
@@ -293,6 +294,8 @@ static inline result<> parse_property(mem_arena &arena, sdef_property *p, token 
       // Memcpy faster than strcpy
       memcpy(arr, string.start, string.len);
       arr[string.len] = 0;
+
+      p->total_len += string.len + 1;
       p->array_count++;
     }
 
