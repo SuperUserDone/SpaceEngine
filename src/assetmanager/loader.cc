@@ -5,14 +5,18 @@
 #include "common/file_utils.hh"
 #include "common/hash.hh"
 #include "common/memory_arena.hh"
+#include "common/memory_scratch_arena.hh"
 #include "common/result.hh"
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
+#include "tracy/Tracy.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
 result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor &desc) {
+  ZoneScopedN("Texture Load");
+
   int x, y, c;
   void *data = stbi_load(desc.texture.file_path, &x, &y, &c, 0);
 
@@ -53,45 +57,59 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
 }
 
 result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor &desc) {
+  ZoneScopedN("Pipeline Load");
   asset_data a;
   a.type = ASSET_TYPE_PIPELINE;
   a.pipeline.uniform_count = desc.pipeline.uniforms_count;
-  // Set needs to remain in scope until asset are uploaded to GPU. I might change this later.
+  // Reason why set needs to remain in scope until asset are uploaded to GPU. I might change this
+  // later.
   a.pipeline.uniform_names = (const char **)desc.pipeline.uniforms;
   a.pipeline.fragment_shader = load_file(arena, desc.pipeline.fragment);
   a.pipeline.vertex_shader = load_file(arena, desc.pipeline.vertex);
   return result_ok<asset_data>(a);
 }
 
-load_result *asset_loader_load_sync(mem_arena &arena, app_state *state, const asset_set &set) {
+result<load_result *> asset_loader_load_sync(mem_arena &arena,
+                                             app_state *state,
+                                             const asset_set &set) {
+  ZoneScopedN("Sync Asset Load");
+
   load_result *res = arena_push_struct(arena, load_result);
   res->count = set.count;
-  res->semaphore = 1;
 
+  // The semaphore is used to indicate number of assets left
+  res->semaphore = set.count;
+
+  // allocate the asset data in the result
   res->set = arena_push_array(arena, asset_data, set.count);
 
   for (size_t i = 0; i < set.count; i++) {
+    result<asset_data> data;
     switch (set.descriptors[i].type) {
     case ASSET_TYPE_TEXTURE:
-      res->set[i] = loader_load_texture(arena, set.descriptors[i]);
+      data = loader_load_texture(arena, set.descriptors[i]);
       break;
     case ASSET_TYPE_PIPELINE:
-      res->set[i] = loader_load_pipeline(arena, set.descriptors[i]);
+      data = loader_load_pipeline(arena, set.descriptors[i]);
       break;
     default:
-      // Should not happen
+      return result_err<load_result *>("Unknown asset type");
       break;
     }
 
-    // TODO investigate copy so set can be deleted after this function.
+    if (!data.ok())
+      return result<load_result *>(data);
+
+    res->set[i] = data;
     res->set[i].name = set.descriptors[i].name;
+    // A asset was loaded, decrement the semaphore
+    res->semaphore--;
   }
 
-  res->semaphore--;
-  return res;
+  return result_ok(res);
 }
 
-void asset_loader_upload_to_vram(app_state *state, load_result *result) {
+result<> asset_loader_upload_to_vram(app_state *state, load_result *result) {
   while (result->semaphore)
     _mm_pause(); // Spin until available
 
@@ -104,7 +122,21 @@ void asset_loader_upload_to_vram(app_state *state, load_result *result) {
       asset_pipeline_create(state, HASH_KEY(result->set[i].name), &result->set[i].pipeline);
       break;
     default:
+      return result_err("Unknown asset type");
       break;
     }
   }
+  return result_ok(true);
+}
+
+result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
+  mem_scratch_arena arena = arena_scratch_get();
+
+  result_forward_err(set, asset_set_load_from_file(arena, filename));
+  result_forward_err(res, asset_loader_load_sync(arena, state, set));
+  result_forward_err(_, asset_loader_upload_to_vram(state, res));
+
+  arena_scratch_free(arena);
+
+  return result_ok(true);
 }

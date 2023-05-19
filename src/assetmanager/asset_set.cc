@@ -7,26 +7,89 @@
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
 #include <string.h>
+#include <unordered_map>
+
+enum texture_properties {
+  TP_UPSAMPLE,
+  TP_DOWNSAMPLE,
+  TP_PATH,
+};
+
+enum pipeline_properties {
+  PP_FRAG,
+  PP_VERT,
+  PP_UNIFORMS,
+};
+
+// The lookup tables for the enums. We use std::unordered_map here as our hashmap implementation is
+// overkill for this usecase an cannot be assigned to directly
+static std::unordered_map<std::string, asset_type> asset_types = {
+    {"texture", ASSET_TYPE_TEXTURE},
+    {"pipeline", ASSET_TYPE_PIPELINE}};
+
+static std::unordered_map<std::string, texture_filter> tex_filters = {
+    {"BILINEAR", TEX_FILTER_LINEAR},
+    {"NEAREST", TEX_FILTER_NEAREST}};
+
+static std::unordered_map<std::string, texture_properties> tex_props = {
+    {"upsample", TP_UPSAMPLE},
+    {"downsample", TP_DOWNSAMPLE},
+    {"path", TP_PATH}};
+
+static std::unordered_map<std::string, pipeline_properties> pipeline_props = {
+    {"frag", PP_FRAG},
+    {"vert", PP_VERT},
+    {"uniforms", PP_UNIFORMS},
+};
+
+#define map_lookup(map, val)                                                                       \
+  auto it = map.find(str);                                                                         \
+  if (it != map.end())                                                                             \
+    return result_ok(it->second);
 
 result<asset_type> asset_type_from_str(const char *str) {
+  map_lookup(asset_types, str);
+  return result_err<asset_type>("Could not determine asset type %s", str);
+}
 
-  // TODO PHF or simmilar
-  if (strcmp(str, "texture") == 0) {
-    return result_ok(ASSET_TYPE_TEXTURE);
-  } else if (strcmp(str, "pipeline") == 0) {
-    return result_ok(ASSET_TYPE_PIPELINE);
-  } else {
-    return result_err<asset_type>("Could not determine asset type %s", str);
+result<texture_filter> tex_filter_from_str(const char *str) {
+  map_lookup(tex_filters, str);
+  return result_err<texture_filter>("Could not determine texture filter type %s", str);
+}
+
+result<texture_properties> tex_prop_from_str(const char *str) {
+  map_lookup(tex_props, str);
+  return result_err<texture_properties>("Unknown texture property %s", str);
+}
+
+result<pipeline_properties> pipeline_prop_from_str(const char *str) {
+  map_lookup(pipeline_props, str);
+  return result_err<pipeline_properties>("Unknown pipeline property %s", str);
+}
+
+const char *sdef_type_to_string(sdef_type type) {
+  switch (type) {
+  case SDEF_TYPE_INTEGER:
+    return "integer";
+  case SDEF_TYPE_STRING:
+    return "string";
+  case SDEF_TYPE_STRING_ARRAY:
+    return "array";
+    break;
   }
 }
 
-result<texture_filter> tex_filter_string_to_filter(const char *str) {
-  if (strcmp(str, "BILINEAR") == 0)
-    return result_ok(TEX_FILTER_LINEAR);
-  if (strcmp(str, "NEAREST") == 0)
-    return result_ok(TEX_FILTER_NEAREST);
+result<> typecheck(const char *name,
+                   const char *prop_name,
+                   sdef_type type,
+                   bool already_defined,
+                   const sdef_property &prop) {
+  if (prop.type != type)
+    return result_err("In %s, the value of %s must be a %s", name, type, sdef_type_to_string(type));
+  if (already_defined)
+    return result_err("In %s, %s redefined as %s", name, type, prop.string);
 
-  return result_err<texture_filter>("Could not determine texture filter type %s", str);
+  return result_ok(true);
 }
 
 result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
@@ -35,39 +98,48 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
   bool path_defined = false;
 
   for (int i = 0; i < block.property_count; i++) {
-    if (strcmp(block.properties[i].name, "upsample") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING)
-        return result_err("In texture %s, the value of upsample must be a string", descriptor.name);
-      if (upsample_defined)
-        return result_err("In texture %s, upsample redefined as %s",
-                          descriptor.name,
-                          block.properties[i].string);
+
+    result_forward_err(prop_type, tex_prop_from_str(block.properties[i].name));
+    switch (prop_type) {
+
+    case TP_UPSAMPLE: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "upsample",
+                                   SDEF_TYPE_STRING,
+                                   upsample_defined,
+                                   block.properties[i]));
       upsample_defined = true;
 
-      descriptor.texture.upsample = tex_filter_string_to_filter(block.properties[i].string);
-    } else if (strcmp(block.properties[i].name, "downsample") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING)
-        return result_err("In texture %s, the value of downsample must be a string",
-                          descriptor.name);
-      if (downsample_defined)
-        return result_err("In texture %s, downsample redefined as %s",
-                          descriptor.name,
-                          block.properties[i].string);
+      result_forward_err(val, tex_filter_from_str(block.properties[i].string));
+      descriptor.texture.upsample = val;
+      break;
+    }
+
+    case TP_DOWNSAMPLE: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "downsample",
+                                   SDEF_TYPE_STRING,
+                                   downsample_defined,
+                                   block.properties[i]));
       downsample_defined = true;
 
-      descriptor.texture.downsample = tex_filter_string_to_filter(block.properties[i].string);
-    } else if (strcmp(block.properties[i].name, "path") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING)
-        return result_err("In texture %s, the value of file must be a string", descriptor.name);
-      if (path_defined)
-        return result_err("In texture %s, file redefined as %s",
-                          descriptor.name,
-                          block.properties[i].string);
+      result_forward_err(val, tex_filter_from_str(block.properties[i].string));
+      descriptor.texture.downsample = val;
+      break;
+    }
+    case TP_PATH: {
+      result_forward_err(
+          _,
+          typecheck(descriptor.name, "path", SDEF_TYPE_STRING, path_defined, block.properties[i]));
 
+      path_defined = true;
       descriptor.texture.file_path =
           arena_push_null_terminated_string(arena, block.properties[i].string);
-      path_defined = true;
-    } else {
+      break;
+    }
+    default:
       return result_err("In texture %s, unknown property %s",
                         descriptor.name,
                         block.properties[i].name);
@@ -90,36 +162,41 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
   bool uniform_defined = false;
 
   for (int i = 0; i < block.property_count; i++) {
-    if (strcmp(block.properties[i].name, "vert") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING)
-        return result_err("In pipeline %s, the value of vertex shader path must be a string",
-                          descriptor.name);
-      if (vert_defined)
-        return result_err("In pipeline %s, vertex shader redefined as %s",
-                          descriptor.name,
-                          block.properties[i].string);
+    result_forward_err(prop_type, pipeline_prop_from_str(block.properties[i].name));
+    switch (prop_type) {
+    case PP_VERT: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "vertex",
+                                   SDEF_TYPE_STRING,
+                                   vert_defined,
+                                   block.properties[i]));
 
       descriptor.pipeline.vertex =
           arena_push_null_terminated_string(arena, block.properties[i].string);
       vert_defined = true;
-    } else if (strcmp(block.properties[i].name, "frag") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING)
-        return result_err("In pipeline %s, the value of fragment shader path must be a string",
-                          descriptor.name);
-      if (frag_defined)
-        return result_err("In pipeline %s, fragment shader redefined as %s",
-                          descriptor.name,
-                          block.properties[i].string);
+      break;
+    }
+    case PP_FRAG: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "fragment",
+                                   SDEF_TYPE_STRING,
+                                   frag_defined,
+                                   block.properties[i]));
 
       descriptor.pipeline.fragment =
           arena_push_null_terminated_string(arena, block.properties[i].string);
       frag_defined = true;
-    } else if (strcmp(block.properties[i].name, "uniforms") == 0) {
-      if (block.properties[i].type != SDEF_TYPE_STRING_ARRAY)
-        return result_err("In pipeline %s, the value of uniforms must be an array",
-                          descriptor.name);
-      if (uniform_defined)
-        return result_err("In pipeline %s, uniforms redefined as %s", descriptor.name);
+      break;
+    }
+    case PP_UNIFORMS: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "uniforms",
+                                   SDEF_TYPE_STRING_ARRAY,
+                                   uniform_defined,
+                                   block.properties[i]));
 
       char *uniforms_info =
           arena_push_string(arena, block.properties[i].string_array, block.properties[i].total_len);
@@ -137,7 +214,9 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
       }
 
       uniform_defined = true;
-    } else {
+      break;
+    }
+    default:
       return result_err("In pipeline %s, unknown property %s",
                         descriptor.name,
                         block.properties[i].name);
@@ -149,7 +228,7 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
   if (!vert_defined)
     return result_err("In pipeline %s vertex shader was not defined", descriptor.name);
   if (!uniform_defined)
-    return result_err("In pipeline %s no unifroms was not defined", descriptor.name);
+    return result_err("In pipeline %s no uniforms were defined", descriptor.name);
 
   return result_ok(true);
 }

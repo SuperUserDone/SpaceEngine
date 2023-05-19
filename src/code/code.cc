@@ -17,10 +17,7 @@
 #include <math.h>
 
 void load_assets(app_state *state) {
-  mem_scratch_arena arena = arena_scratch_get();
-  asset_set set = asset_set_load_from_file(arena, "data/asset_db.sdef");
-  load_result *res = asset_loader_load_sync(arena, state, set);
-  asset_loader_upload_to_vram(state, res);
+  asset_loader_load_file_sync(state, "data/base.sdef").get_no_err();
 }
 
 void init(app_state *state) {
