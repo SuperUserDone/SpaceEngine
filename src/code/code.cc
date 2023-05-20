@@ -24,7 +24,7 @@ void init(app_state *state) {
   state->game.camera.pos = {0, 0};
   state->game.camera.zoom = 0.1f;
 
-  state->game.renderer.bloom_params = {3.f, 1.9f, 0.2f, 2.5f};
+  state->game.renderer.bloom_params = {1.f, 0.9f, 0.2f, 2.5f};
   state->game.renderer.bloom_size = 0.001f;
 
   state->game.solar_system = arena_push_struct(state->permanent_arena, solar_system);
@@ -63,7 +63,7 @@ void draw_debug_info(app_state *state) {
                     0.01,
                     0.f,
                     10.f);
-  ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.00001f, 0.f, 1.f);
+  ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.001f, 0.f, 1.f);
 
   ImGui::End();
 }

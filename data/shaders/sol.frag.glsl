@@ -21,8 +21,8 @@ void main()
     float sTime = time * 0.05;
 
     float tsample = texture(organic, starUV + vec2(sTime* 1.5, 0.f)).g;
-    tsample = mix(texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r, 1.0f, 0.7f);
-    tsample *= 4.0f;
+    tsample = mix(texture(organic, starUV + vec2(tsample * 0.1 + sTime, 0.0)).r, 1.0f, 0.75f);
+    tsample *= 2.0f;
 
     vec3 color = vec3(tsample) * sunColor;
   	fragColor.rgb = color;
