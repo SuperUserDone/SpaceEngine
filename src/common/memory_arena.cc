@@ -17,6 +17,7 @@ mem_arena arena_create(size_t max_size) {
   a.alignment = 1;
   a.base = nullptr;
   a.size = 0;
+  a.grow_semaphore = false;
 
   // We need to keep track of the system page size so lazy-initialize it if it is not already
   // initialized
@@ -46,17 +47,30 @@ mem_arena arena_create(size_t max_size) {
 }
 
 void arena_grow(mem_arena &arena, size_t min_size) {
+  // Spin until all growth opperations are completed in other threads
+  while (arena.grow_semaphore.load())
+    _mm_pause();
+
+  // Might be a bug here, should be a compare and exchange? Maybe we can force ordering with a flag?
+  arena.grow_semaphore.store(true);
+
   // Round the size to the next page size
   size_t alloc = ((min_size + page_size - 1) / page_size) * (page_size);
+
+  // Check if we really need to grow the arena
+  if (alloc < arena.allocated_size)
+    return;
 
   SPACE_ASSERT(alloc <= arena.max_size, "Tried to grow arena beyond its capacity!");
 
   // Now we can commit the already reserved memory MAKE SURE IT IS RW NOT RWX
   void *a = VirtualAlloc(arena.base, alloc, MEM_COMMIT, PAGE_READWRITE);
-    
+
   arena.allocated_size = alloc;
 
   SPACE_ASSERT(a, "Failed to commit arena memory!")
+
+  arena.grow_semaphore.store(false);
 }
 
 void arena_free(mem_arena &arena) {

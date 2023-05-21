@@ -5,10 +5,10 @@
 // this is to prevent heap allocations in hot paths and the main loop. In a ideal world no heap
 // allocations would be neccacary, and I am trying my best to ensure that
 
+#include <atomic>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <vcruntime_string.h>
 
 #include "common/debug.hh"
 #include "win32_export.hh"
@@ -22,20 +22,35 @@
 
 struct mem_arena {
   mem_arena() = default;
-  mem_arena(mem_arena &&other) = default;
+  mem_arena(mem_arena &&other) {
+    base = other.base;
+    size = other.size.load();
+    allocated_size = other.allocated_size;
+    max_size = other.max_size;
+    alignment = other.alignment;
+  };
 
-  mem_arena &operator=(mem_arena &&other) = default;
+  mem_arena &operator=(mem_arena &&other) {
+    base = other.base;
+    size = other.size.load();
+    allocated_size = other.allocated_size;
+    max_size = other.max_size;
+    alignment = other.alignment;
+    return *this;
+  }
 
   void *base;
-  size_t size;
+  std::atomic_size_t size;
   size_t allocated_size;
   size_t max_size;
   size_t alignment;
 
+  std::atomic_bool grow_semaphore;
+
 private:
   // Delete the copy ctor & copy assignment as arenas are intended to be passed by reference.
   mem_arena(const mem_arena &other) = delete;
-  mem_arena &operator=(const mem_arena &other) = default;
+  mem_arena &operator=(const mem_arena &other) = delete;
 };
 
 // Platform specific funtions are extracted to the cc file, as we dont want to pollute the namespace
@@ -62,10 +77,39 @@ static inline void *arena_push(mem_arena &arena, size_t size) {
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   // Find the address of the top of the arena
-  void *base = (void *)((uint8_t*)arena.base + arena.size);
+  void *base = (void *)((uint8_t *)arena.base + arena.size);
 
   // Mark the memory as used
   arena.size += size;
+
+  return base;
+}
+
+static inline void *arena_push_atomic(mem_arena &arena, size_t size) {
+  bool done = false;
+  void *base = nullptr;
+  while (!done) {
+    size_t arena_size = arena.size;
+
+    // Grow the arena if it is too small
+    if (arena_size + size >= arena.allocated_size) {
+      arena_grow(arena, arena_size + size);
+    }
+
+    // Alignment
+    size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
+
+    // Find the address of the top of the arena
+    base = (void *)((uint8_t *)arena.base + arena_size);
+
+    // Mark the memory as used
+    size_t new_arena_size = arena_size + size;
+
+    // Store value
+    done = arena.size.compare_exchange_strong(arena_size, new_arena_size);
+
+  }
+
 
   return base;
 }
