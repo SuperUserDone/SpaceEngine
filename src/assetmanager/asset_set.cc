@@ -1,12 +1,10 @@
-#include "asset_set.hh"
+#include "assetmanager/asset_set.hh"
 #include "common/file_utils.hh"
-#include "common/memory_arena.hh"
 #include "common/memory_scratch_arena.hh"
-#include "common/result.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
-#include "data/asset_types.hh"
-#include <string.h>
+
+#include <string>
 #include <unordered_map>
 
 enum texture_properties {

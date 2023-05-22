@@ -1,20 +1,6 @@
-#include "assetmanager/asset_set.hh"
-#include "assetmanager/assetmanager.hh"
 #include "assetmanager/loader.hh"
-#include "common/file_utils.hh"
-#include "common/hash.hh"
-#include "common/hash_table.hh"
-#include "common/memory_arena.hh"
-#include "common/memory_scratch_arena.hh"
-#include "common/win32_export.hh"
-#include "data/app_state.hh"
-#include "data/asset_types.hh"
-#include "data/game_data.hh"
-#include "data/renderer_api.hh"
-#include "imgui.h"
 #include "renderer/renderer.hh"
-#include <glm/ext/matrix_transform.hpp>
-#include <math.h>
+#include <imgui.h>
 
 void load_assets(app_state *state) {
   asset_loader_load_file_sync(state, "data/base.sdef").get_no_err();

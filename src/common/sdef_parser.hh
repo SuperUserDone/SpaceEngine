@@ -12,8 +12,9 @@
 // Example file
 // [type] name
 // prop1 "prop_value"
-// prop2 ["prop_value1", "prop_value2"]
-// prop3 ["prop_value3" "prop_value4"]
+// prop2 1
+// prop3 ["prop_value1", "prop_value2"]
+// prop4 ["prop_value3" "prop_value4"]
 //
 // Note that in the dom arrays are stored as null terminated strings concatenated together
 

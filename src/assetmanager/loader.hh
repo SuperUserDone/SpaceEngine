@@ -3,13 +3,10 @@
 // This is the interface used to load assests from disk to memory and later VRAM. The loading of
 // assets can be done async.
 
-#include "assetmanager/asset_set.hh"
-#include "common/memory_arena.hh"
-#include "common/memory_arena_typed.hh"
 #include "common/result.hh"
 #include "data/app_state.hh"
 #include "data/asset_storage.hh"
-#include <atomic>
+#include <string>
 
 struct asset_data {
   asset_type type;
@@ -48,7 +45,7 @@ APIFUNC result<> asset_loader_upload_to_vram(app_state *state, async_load_result
 // must remain available until after uploaded to vram.
 APIFUNC async_load_result *asset_loader_load_async(mem_arena &arena,
                                                    app_state *state,
-                                                   const asset_set &set);
+                                                   const asset_data &set);
 
 // Get loading progress from the async load result.
 APIFUNC result<async_load_result_info> asset_loader_async_query(async_load_result &result);

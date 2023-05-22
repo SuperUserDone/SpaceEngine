@@ -1,12 +1,6 @@
 #include "assetmanager.hh"
 #include "common/hash.hh"
-#include "common/hash_table.hh"
-#include "common/memory_arena.hh"
-#include "common/memory_pool.hh"
-#include "data/asset_storage.hh"
-#include "data/asset_types.hh"
-#include "opengl/renderer_framebuffer.hh"
-#include <tracy/Tracy.hpp>
+#include "tracy/Tracy.hpp"
 
 #define create_function(name, ENUM_NAME)                                                           \
   void asset_##name##_create(app_state *state, size_t id, name##_data *data) {                     \

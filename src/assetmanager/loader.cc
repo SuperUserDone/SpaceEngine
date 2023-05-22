@@ -1,18 +1,10 @@
 #include "loader.hh"
 #include "assetmanager/asset_set.hh"
 #include "assetmanager/assetmanager.hh"
-#include "common/TracySystem.hpp"
-#include "common/debug.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
-#include "common/memory_arena.hh"
 #include "common/memory_scratch_arena.hh"
-#include "common/result.hh"
-#include "data/asset_storage.hh"
-#include "data/asset_types.hh"
 #include "tracy/Tracy.hpp"
-#include <algorithm>
-#include <chrono>
 #include <thread>
 
 #define STB_IMAGE_IMPLEMENTATION

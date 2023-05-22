@@ -1,11 +1,8 @@
 #pragma once
 
-#include "common/memory_arena.hh"
-#include "common/result.hh"
-#include "common/win32_export.hh"
-#include "data/asset_storage.hh"
-#include "data/asset_types.hh"
 
+#include "common/result.hh"
+#include "data/asset_storage.hh"
 struct asset_descriptor {
   asset_type type;
   const char *name;

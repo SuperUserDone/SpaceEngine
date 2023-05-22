@@ -8,7 +8,6 @@
 #include <atomic>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "common/debug.hh"
 #include "win32_export.hh"

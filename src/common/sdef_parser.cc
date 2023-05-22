@@ -5,7 +5,6 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <vcruntime_string.h>
 
 enum token_type {
   TOKEN_NONE,
