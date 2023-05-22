@@ -1,6 +1,7 @@
 #include "loader.hh"
 #include "assetmanager/asset_set.hh"
 #include "assetmanager/assetmanager.hh"
+#include "common/TracySystem.hpp"
 #include "common/debug.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
@@ -10,6 +11,9 @@
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
 #include "tracy/Tracy.hpp"
+#include <algorithm>
+#include <chrono>
+#include <thread>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -23,7 +27,7 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
   if (!data)
     return result_err<asset_data>("Could not load file %s from disk", desc.texture.file_path);
 
-  void *new_data = arena_push(arena, x * y * c);
+  void *new_data = arena_push_atomic(arena, x * y * c);
   memcpy(new_data, data, x * y * c);
 
   stbi_image_free(data);
@@ -69,21 +73,14 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
   return result_ok<asset_data>(a);
 }
 
-result<load_result *> asset_loader_load_sync(mem_arena &arena,
-                                             app_state *state,
-                                             const asset_set &set) {
-  ZoneScopedN("Sync Asset Load");
+void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
+  tracy::SetThreadName("Loader Worker Thread");
+  ZoneScopedN("Load Proces Thread");
+  while (1) {
+    size_t i = res->i++;
+    if (i >= res->count)
+      break;
 
-  load_result *res = arena_push_struct(arena, load_result);
-  res->count = set.count;
-
-  // The semaphore is used to indicate number of assets left
-  res->semaphore = set.count;
-
-  // allocate the asset data in the result
-  res->set = arena_push_array(arena, asset_data, set.count);
-
-  for (size_t i = 0; i < set.count; i++) {
     result<asset_data> data;
     switch (set.descriptors[i].type) {
     case ASSET_TYPE_TEXTURE:
@@ -93,33 +90,73 @@ result<load_result *> asset_loader_load_sync(mem_arena &arena,
       data = loader_load_pipeline(arena, set.descriptors[i]);
       break;
     default:
-      return result_err<load_result *>("Unknown asset type");
+      res->error = "Could not load asset";
+      res->has_error = true;
       break;
     }
 
-    if (!data.ok())
-      return result<load_result *>(data);
+    if (!data.ok()) {
+      res->error = "Could not load asset";
+      res->has_error = true;
+    }
 
-    res->set[i] = data;
-    res->set[i].name = set.descriptors[i].name;
-    // A asset was loaded, decrement the semaphore
-    res->semaphore--;
+    res->result.set[i] = data;
+    res->result.set[i].name = set.descriptors[i].name;
+    res->loaded++;
   }
-
-  return result_ok(res);
 }
 
-result<> asset_loader_upload_to_vram(app_state *state, load_result *result) {
-  while (result->semaphore)
-    _mm_pause(); // Spin until available
+async_load_result *asset_loader_load_async(mem_arena &arena,
+                                           app_state *state,
+                                           const asset_set &set) {
+  ZoneScopedN("Async Asset Load Begin");
+
+  async_load_result *res = arena_push_struct(arena, async_load_result);
+  res->count = set.count;
+  res->loaded = 0;
+  res->i = 0;
+  res->result.count = set.count;
+
+  // allocate the asset data in the result
+  res->result.set = arena_push_array(arena, asset_data, set.count);
+
+  for (int i = 0; i < std::max((int)std::thread::hardware_concurrency() - 2, (int)1); i++) {
+    std::thread t(process_thread, std::ref(arena), std::cref(set), res);
+    t.detach();
+  }
+
+  return res;
+}
+
+APIFUNC result<async_load_result_info> asset_loader_async_query(async_load_result &result) {
+  if (result.has_error)
+    return result_err<async_load_result_info>(result.error.c_str());
+  else
+    return result_ok(async_load_result_info{result.count, result.loaded.load()});
+}
+
+result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result) {
+  ZoneScopedN("Upload to VRAM");
+  {
+    ZoneScopedN("Spin Wait");
+    while (result->loaded.load() < result->count && !result->has_error.load())
+      _mm_pause(); // Spin until available
+  }
+
+  if (result->has_error)
+    return result_err(result->error.c_str());
 
   for (int i = 0; i < result->count; i++) {
-    switch (result->set[i].type) {
+    switch (result->result.set[i].type) {
     case ASSET_TYPE_TEXTURE:
-      asset_texture_create(state, HASH_KEY(result->set[i].name), &result->set[i].texture);
+      asset_texture_create(state,
+                           HASH_KEY(result->result.set[i].name),
+                           &result->result.set[i].texture);
       break;
     case ASSET_TYPE_PIPELINE:
-      asset_pipeline_create(state, HASH_KEY(result->set[i].name), &result->set[i].pipeline);
+      asset_pipeline_create(state,
+                            HASH_KEY(result->result.set[i].name),
+                            &result->result.set[i].pipeline);
       break;
     default:
       return result_err("Unknown asset type");
@@ -133,10 +170,21 @@ result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
   mem_scratch_arena arena = arena_scratch_get();
 
   result_forward_err(set, asset_set_load_from_file(arena, filename));
-  result_forward_err(res, asset_loader_load_sync(arena, state, set));
+
+  async_load_result *res = asset_loader_load_async(arena, state, set);
+
   result_forward_err(_, asset_loader_upload_to_vram(state, res));
 
   arena_scratch_free(arena);
 
   return result_ok(true);
+}
+
+result<async_load_result *> asset_loader_load_file_async(mem_arena &arena,
+                                                         app_state *state,
+                                                         const char *filename) {
+  result_forward_err(set, asset_set_load_from_file(arena, filename));
+  async_load_result *res = asset_loader_load_async(arena, state, set);
+
+  return result_ok(res);
 }
