@@ -74,7 +74,6 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
 }
 
 void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
-  tracy::SetThreadName("Loader Worker Thread");
   ZoneScopedN("Load Proces Thread");
   while (1) {
     size_t i = res->i++;
