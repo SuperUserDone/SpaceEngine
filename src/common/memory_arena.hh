@@ -18,7 +18,7 @@
 #define arena_pop_struct(arena, struct) arena_pop(arena, sizeof(struct))
 #define arena_push_array(arena, type, len) (type *)arena_push(arena, sizeof(type) * (len))
 #define arena_push_array_zero(arena, type, len) (type *)arena_push_zero(arena, sizeof(type) * (len))
-#define arena_push_null_terminated_string(arena, str) arena_push_string(arena, str, strlen(str));
+#define arena_push_null_terminated_string(arena, str) arena_push_string(arena, str, strlen(str))
 
 struct mem_arena {
   mem_arena() = default;
