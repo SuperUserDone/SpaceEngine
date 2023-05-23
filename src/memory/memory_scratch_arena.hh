@@ -2,7 +2,7 @@
 
 // This is used to get a handle to thread-local arena objects for temp scratch allocations.
 
-#include "common/memory_arena.hh"
+#include "memory_arena.hh"
 
 #define MAX_SCRATCH_STACKS 8
 

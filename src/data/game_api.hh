@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include "data/event.hh"
 
 struct app_state;

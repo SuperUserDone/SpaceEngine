@@ -6,10 +6,7 @@
 // blocks are inserted into FILO queue
 
 #include "memory_arena.hh"
-#include "win32_export.hh"
-#include <math.h>
-
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+#include <algorithm>
 
 struct free_block {
   free_block *next;
@@ -33,7 +30,7 @@ static inline mem_pool<T> pool_create(size_t max_elements) {
   mem_pool<T> m;
   m.arena = arena_create(max_elements * sizeof(T));
   // Some datastructures and primitives can be smaller a void*. Account fot that
-  m.obj_size = max(sizeof(T), sizeof(free_block));
+  m.obj_size = std::max(sizeof(T), sizeof(free_block));
   m.first_free = nullptr;
   return m;
 }

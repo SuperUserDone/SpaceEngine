@@ -1,18 +1,9 @@
 #include "renderer.hh"
-#include "assetmanager/assetmanager.hh"
-#include "common/file_utils.hh"
-#include "common/hash.hh"
-#include "common/memory_arena.hh"
-#include "common/pipeline_settings.hh"
-#include "data/app_state.hh"
-#include "data/asset_types.hh"
-#include "data/game_state.hh"
-#include "data/renderer_api.hh"
 #include "renderer/render_pass_bloom.hh"
 #include "renderer/render_pass_geometry.hh"
 #include "renderer/render_pass_tonemap.hh"
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 void render_init(app_state *state) {
   render_pass_bloom_init(state);

@@ -1,5 +1,5 @@
 #pragma once
-#include "common/memory_pool.hh"
+#include "memory/memory_pool.hh"
 #include "data/asset_types.hh"
 #include "glad/gl.h"
 #include "renderer_state.hh"

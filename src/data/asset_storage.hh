@@ -1,10 +1,10 @@
 #pragma once
 
 #include "common/hash_table.hh"
-#include "common/memory_arena.hh"
-#include "common/memory_arena_typed.hh"
-#include "common/memory_pool.hh"
 #include "data/asset_types.hh"
+#include "memory/memory_arena.hh"
+#include "memory/memory_arena_typed.hh"
+#include "memory/memory_pool.hh"
 
 enum asset_type {
   ASSET_TYPE_TEXTURE,

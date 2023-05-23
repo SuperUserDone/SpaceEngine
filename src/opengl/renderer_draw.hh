@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/memory_pool.hh"
+#include "memory/memory_pool.hh"
 #include "data/asset_types.hh"
 #include "data/renderer_api.hh"
 #include "opengl/renderer_state.hh"

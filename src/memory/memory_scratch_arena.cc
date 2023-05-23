@@ -1,6 +1,6 @@
 #include "memory_scratch_arena.hh"
 #include "common/debug.hh"
-#include "common/memory_arena.hh"
+#include "memory_arena.hh"
 
 thread_local static mem_arena arenas[MAX_SCRATCH_STACKS];
 thread_local static bool init = false;

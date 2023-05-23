@@ -19,7 +19,7 @@ struct game_state {
     renderer_framebuffer bloom_buffers[MAX_BLOOM_ITERATIONS];
     renderer_texture bloom_buffer_textures[MAX_BLOOM_ITERATIONS];
 
-    uint8_t bloom_iters;
+    size_t bloom_iters;
 
     glm::vec2 bloom_viewports[MAX_BLOOM_ITERATIONS];
     glm::vec4 bloom_params;

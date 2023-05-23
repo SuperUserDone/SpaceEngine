@@ -1,7 +1,7 @@
 #pragma once
 
 #include "asset_storage.hh"
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include "data/game_api.hh"
 #include "game_state.hh"
 #include "renderer_api.hh"

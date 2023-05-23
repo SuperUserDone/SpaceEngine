@@ -18,7 +18,7 @@
 //
 // Note that in the dom arrays are stored as null terminated strings concatenated together
 
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include "common/result.hh"
 #include "win32_export.hh"
 #include <stdint.h>

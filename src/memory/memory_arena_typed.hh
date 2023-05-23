@@ -2,7 +2,7 @@
 
 // This is a simple wrapper around the arena with templates to force homogenous types
 
-#include "common/memory_arena.hh"
+#include "memory_arena.hh"
 
 template <typename T>
 struct mem_arena_typed {

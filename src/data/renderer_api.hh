@@ -1,9 +1,8 @@
 #pragma once
 
-#include "common/memory_arena.hh"
 #include "data/asset_types.hh"
 
-#include "common/pipeline_settings.hh"
+#include "renderer/pipeline_settings.hh"
 
 typedef void (*loaded_proc)(void);
 typedef loaded_proc (*load_proc)(const char *);

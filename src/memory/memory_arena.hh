@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 #include "common/debug.hh"
-#include "win32_export.hh"
+#include "common/win32_export.hh"
 
 // Define some helpers that dont need to be their own functions.
 #define arena_push_struct(arena, struct) (struct *)arena_push_zero(arena, sizeof(struct))
@@ -106,9 +106,7 @@ static inline void *arena_push_atomic(mem_arena &arena, size_t size) {
 
     // Store value
     done = arena.size.compare_exchange_strong(arena_size, new_arena_size);
-
   }
-
 
   return base;
 }

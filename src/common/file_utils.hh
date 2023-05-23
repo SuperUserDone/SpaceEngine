@@ -3,7 +3,7 @@
 // This is a temp piece of code to assist in development to quickly load a file into a string.
 // Should be removed by release
 
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include <stdio.h>
 
 static inline char *load_file(mem_arena &arena, const char *path) {

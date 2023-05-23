@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common/memory_arena.hh"
-#include "common/memory_pool.hh"
+#include "memory/memory_arena.hh"
+#include "memory/memory_pool.hh"
+
 struct internal_mesh {
   uint32_t vb;
   uint32_t ib;

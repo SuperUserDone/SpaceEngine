@@ -1,6 +1,6 @@
 #include "assetmanager/asset_set.hh"
 #include "common/file_utils.hh"
-#include "common/memory_scratch_arena.hh"
+#include "memory/memory_scratch_arena.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
 

@@ -4,7 +4,7 @@
 // does simple type checking too
 
 #include "common/debug.hh"
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include "data/asset_types.hh"
 #include <glm/glm.hpp>
 #include <stdint.h>

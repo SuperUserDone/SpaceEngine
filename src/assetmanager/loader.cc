@@ -3,7 +3,7 @@
 #include "assetmanager/assetmanager.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
-#include "common/memory_scratch_arena.hh"
+#include "memory/memory_scratch_arena.hh"
 #include "tracy/Tracy.hpp"
 #include <thread>
 

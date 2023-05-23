@@ -1,10 +1,8 @@
 #include "renderer/render_pass_bloom.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/hash.hh"
-#include <glm/common.hpp>
+#include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-
-#define min(x, y) (((x) > (y)) ? (y) : (x))
 
 static void bloom_render_downsample(app_state *state) {
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
@@ -96,11 +94,12 @@ void render_pass_bloom_init(app_state *state) {
     state->game.renderer.bloom_viewports[i] = window;
 
     if (window.x < 10 || window.y < 10) {
-      state->game.renderer.bloom_iters = min(i, state->game.renderer.bloom_iters);
+      state->game.renderer.bloom_iters = std::min((size_t)i, (size_t)state->game.renderer.bloom_iters);
     }
 
     window /= 2;
-    window = glm::max(window, glm::uvec2());
+    window = glm::max(window, glm::uvec2(1));
+
   }
 }
 

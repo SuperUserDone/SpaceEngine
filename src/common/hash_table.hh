@@ -12,7 +12,7 @@
 
 // I've made the hashmap header only to force some more inlining
 
-#include "common/memory_arena.hh"
+#include "memory/memory_arena.hh"
 #include "win32_export.hh"
 
 struct hash_table_entry {
