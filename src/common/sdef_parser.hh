@@ -18,10 +18,11 @@
 //
 // Note that in the dom arrays are stored as null terminated strings concatenated together
 
-#include "memory/memory_arena.hh"
 #include "common/result.hh"
+#include "memory/memory_arena.hh"
 #include "win32_export.hh"
 #include <stdint.h>
+
 
 enum sdef_type {
   SDEF_TYPE_INTEGER,
@@ -56,6 +57,4 @@ struct sdef_dom {
   size_t block_count;
 };
 
-APIFUNC result<sdef_dom *> sdef_parse(mem_arena &arena,
-                                      const char *str,
-                                      size_t len);
+APIFUNC result<sdef_dom *> sdef_parse(mem_arena &arena, const char *str, size_t len);

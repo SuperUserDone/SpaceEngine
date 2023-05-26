@@ -1,7 +1,7 @@
 #include "common/sdef_parser.hh"
+#include "common/result.hh"
 #include "memory/memory_arena.hh"
 #include "memory/memory_scratch_arena.hh"
-#include "common/result.hh"
 
 #include <ctype.h>
 #include <stdio.h>

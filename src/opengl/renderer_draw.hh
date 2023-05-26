@@ -1,8 +1,8 @@
 #pragma once
 
-#include "memory/memory_pool.hh"
 #include "data/asset_types.hh"
 #include "data/renderer_api.hh"
+#include "memory/memory_pool.hh"
 #include "opengl/renderer_state.hh"
 #include "renderer_pipeline.hh"
 #include "tracy/Tracy.hpp"

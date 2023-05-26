@@ -1,9 +1,9 @@
 #pragma once
 
 #include "asset_storage.hh"
-#include "memory/memory_arena.hh"
 #include "data/game_api.hh"
 #include "game_state.hh"
+#include "memory/memory_arena.hh"
 #include "renderer_api.hh"
 
 struct app_state {

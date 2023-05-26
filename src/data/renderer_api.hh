@@ -1,7 +1,6 @@
 #pragma once
 
 #include "data/asset_types.hh"
-
 #include "renderer/pipeline_settings.hh"
 
 typedef void (*loaded_proc)(void);
@@ -65,5 +64,4 @@ struct renderer_api {
   renderer_imgui_begin_fun imgui_begin;
   renderer_imgui_begin_fun imgui_end;
   renderer_set_blending_fun set_blending;
-
 };

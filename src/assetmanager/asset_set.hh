@@ -1,8 +1,8 @@
 #pragma once
 
-
 #include "common/result.hh"
 #include "data/asset_storage.hh"
+
 struct asset_descriptor {
   asset_type type;
   const char *name;

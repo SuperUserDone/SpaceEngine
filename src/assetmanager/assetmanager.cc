@@ -73,7 +73,7 @@ void asset_system_init(app_state *state) {
 
   state->assets.asset_lookup = hash_table_create(state->permanent_arena);
   state->assets.index_table = pool_create<asset_index>(1024);
-  
+
   init_default_assets(state);
 }
 
@@ -102,4 +102,3 @@ get_function(texture, ASSET_TYPE_TEXTURE);
 get_function(pipeline, ASSET_TYPE_PIPELINE);
 get_function(mesh, ASSET_TYPE_MESH);
 get_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
-

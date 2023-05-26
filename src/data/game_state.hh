@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <stdint.h>
 
-#define MAX_BLOOM_ITERATIONS 12 
+#define MAX_BLOOM_ITERATIONS 12
 
 struct game_state {
   struct {

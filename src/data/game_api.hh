@@ -1,7 +1,7 @@
 #pragma once
 
-#include "memory/memory_arena.hh"
 #include "data/event.hh"
+#include "memory/memory_arena.hh"
 
 struct app_state;
 
@@ -19,7 +19,7 @@ struct game_api {
   game_render_fun render;
   game_tick_fun tick;
   game_shutdown_fun shutdown;
-  game_event_fun event; 
+  game_event_fun event;
 
   game_draw_debug_fun draw_debug_info;
   game_load_assets_fun load_assets;

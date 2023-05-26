@@ -1,10 +1,10 @@
 #pragma once
 
 #include "common/debug.hh"
-#include "memory/memory_arena.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "glad/gl.h"
+#include "memory/memory_arena.hh"
 #include "opengl/renderer_state.hh"
 #include "tracy/Tracy.hpp"
 

@@ -9,6 +9,7 @@
 struct precise_timer {
   int64_t start;
 };
+
 APIFUNC extern void timer_init_subsystem();
 
 APIFUNC extern precise_timer timer_create();

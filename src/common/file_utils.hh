@@ -17,7 +17,7 @@ static inline char *load_file(mem_arena &arena, const char *path) {
   len = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  char *buf = (char*)arena_push_atomic(arena, sizeof(char) * (len + 1));
+  char *buf = (char *)arena_push_atomic(arena, sizeof(char) * (len + 1));
   read = fread(buf, 1, len, fp);
   buf[read] = '\0';
 

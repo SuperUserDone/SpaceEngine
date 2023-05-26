@@ -14,4 +14,4 @@ struct renderer_state {
   mem_arena perm_data;
 };
 
-extern renderer_state* rstate;
+extern renderer_state *rstate;

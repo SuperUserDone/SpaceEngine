@@ -1,8 +1,9 @@
 #include "assetmanager/asset_set.hh"
 #include "common/file_utils.hh"
-#include "memory/memory_scratch_arena.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
+#include "memory/memory_scratch_arena.hh"
+
 
 #include <string>
 #include <unordered_map>

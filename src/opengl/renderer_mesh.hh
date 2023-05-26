@@ -1,7 +1,8 @@
 #pragma once
-#include "memory/memory_pool.hh"
+
 #include "data/asset_types.hh"
 #include "glad/gl.h"
+#include "memory/memory_pool.hh"
 #include "renderer_state.hh"
 #include "tracy/Tracy.hpp"
 
@@ -49,10 +50,9 @@ static inline renderer_mesh create_mesh(mesh_data *data) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, pos));
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, uv));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, pos));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, uv));
   }
-
 
   return mesh;
 }
@@ -65,4 +65,3 @@ static inline void delete_mesh(renderer_mesh r) {
   glDeleteBuffers(1, &m->ib);
   glDeleteBuffers(1, &m->vb);
 }
-
