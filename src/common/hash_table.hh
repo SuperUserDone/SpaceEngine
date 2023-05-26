@@ -12,11 +12,14 @@
 
 // I've made the hashmap header only to force some more inlining
 
+#include "common/hash.hh"
 #include "memory/memory_arena.hh"
 #include "win32_export.hh"
+#include <string.h>
 
 struct hash_table_entry {
-  size_t key;
+  const char *key;
+  size_t hash;
   void *val;
   int32_t cost;
 };
@@ -31,12 +34,14 @@ static inline hash_table hash_table_create(mem_arena &a, size_t size = 0xffff) {
   return {arena_push_array_zero(a, hash_table_entry, size), 0, size};
 }
 
-static inline bool hash_table_insert(hash_table &t, size_t key, void *value) {
+static inline bool hash_table_insert(hash_table &t, const char *key, void *value) {
   if (t.size == t.nentries)
     return false;
 
-  size_t location = key % t.size;
-  hash_table_entry entry = {key, value, 0};
+  size_t hash = HASH_KEY(key);
+
+  size_t location = hash % t.size;
+  hash_table_entry entry = {key, hash, value, 0};
 
   while (t.e[location].val != nullptr) {
     if (entry.cost > t.e[location].cost) {
@@ -52,14 +57,17 @@ static inline bool hash_table_insert(hash_table &t, size_t key, void *value) {
   return true;
 };
 
-static inline int64_t _hash_table_get_key_location(hash_table &t, size_t key) {
-  size_t location = key % t.size;
+static inline int64_t _hash_table_get_key_location(hash_table &t, const char *key) {
+  size_t hash = HASH_KEY(key);
+
+  size_t location = hash % t.size;
 
   int64_t loc = -1;
   for (size_t cost = 0; t.e[location].cost >= cost; cost++, location++) {
     location = location % t.size;
 
-    if (t.e[location].key == key) {
+    if (t.e[location].hash == hash && key[0] == t.e[location].key[0] &&
+        (strcmp(key + 1, t.e[location].key + 1) == 0)) {
       loc = location;
       break;
     }
@@ -70,7 +78,7 @@ static inline int64_t _hash_table_get_key_location(hash_table &t, size_t key) {
 
 // We use the linear search version of the hash lookup, as we do not need the better organ or smart
 // lookup functions in the paper.
-static inline void *hash_table_search(hash_table &t, size_t key) {
+static inline void *hash_table_search(hash_table &t, const char *key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   if (loc >= 0) {
     return t.e[loc].val;
@@ -79,7 +87,7 @@ static inline void *hash_table_search(hash_table &t, size_t key) {
   }
 }
 
-static inline void hash_table_delete(hash_table &t, size_t key) {
+static inline void hash_table_delete(hash_table &t, const char *key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   while (loc >= 0) {
     size_t pl = loc;
@@ -88,7 +96,7 @@ static inline void hash_table_delete(hash_table &t, size_t key) {
       t.e[pl] = t.e[loc];
       t.e[pl].cost--;
     } else {
-      t.e[pl] = hash_table_entry{0, 0, 0};
+      t.e[pl] = hash_table_entry{0, 0, 0, 0};
       break;
     }
   }

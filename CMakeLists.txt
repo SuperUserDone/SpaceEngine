@@ -53,7 +53,7 @@ target_link_libraries(space_renderer PRIVATE glm::glm ${ADD_LINKS})
 target_link_libraries(space_code PRIVATE space_common space_renderer glm::glm ${ADD_LINKS})
 target_link_libraries(space_opengl PRIVATE space_common glm::glm ${ADD_LINKS})
 
-add_dependencies(space space_opengl space_common space_code)
+add_dependencies(space space_opengl space_common space_code space_renderer)
 
 set_target_properties(space_opengl PROPERTIES PDB_NAME "space_opengl_%random%")
 set_target_properties(space_code PROPERTIES PDB_NAME "space_code_%random%")

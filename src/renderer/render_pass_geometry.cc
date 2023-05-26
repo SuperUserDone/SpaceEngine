@@ -10,14 +10,14 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
                  glm::vec3(raduis * 2.0));
 
   glm::mat4 mvp = state->game.renderer.camp * state->game.renderer.camv * model;
-  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
+  renderer_mesh m = asset_mesh_get_render(state, "Quad");
   renderer_mesh *mp = &m;
 
-  renderer_pipeline p = asset_pipeline_get_render(state, HASH_KEY("solar"));
+  renderer_pipeline p = asset_pipeline_get_render(state, "solar");
 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);
-  pipeline_settings_set_uniform(settings, 1, asset_texture_get_render(state, HASH_KEY("organic1")));
+  pipeline_settings_set_uniform(settings, 1, asset_texture_get_render(state, "organic1"));
   pipeline_settings_set_uniform(settings, 2, (float)state->time.t);
   pipeline_settings_set_uniform(settings, 3, color);
   pipeline_settings_set_uniform(settings, 4, raduis * state->game.camera.zoom * 100.f);

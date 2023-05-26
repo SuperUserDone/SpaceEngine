@@ -3,7 +3,7 @@
 #include "tracy/Tracy.hpp"
 
 #define create_function(name, ENUM_NAME)                                                           \
-  void asset_##name##_create(app_state *state, size_t id, name##_data *data) {                     \
+  void asset_##name##_create(app_state *state, const char *id, name##_data *data) {                \
     asset_##name##_delete(state, id);                                                              \
     renderer_##name t = state->api.renderer.create_##name(data);                                   \
     renderer_##name *k = pool_alloc(state->assets.name##_data);                                    \
@@ -14,7 +14,7 @@
   }
 
 #define update_function(name, ENUM_NAME)                                                           \
-  void asset_##name##_update(app_state *state, size_t id, name##_data *data) {                     \
+  void asset_##name##_update(app_state *state, const char *id, name##_data *data) {                \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
       state->api.renderer.update_##name((renderer_##name *)i->value, data);                        \
@@ -22,7 +22,7 @@
   }
 
 #define delete_function(name, ENUM_NAME)                                                           \
-  void asset_##name##_delete(app_state *state, size_t id) {                                        \
+  void asset_##name##_delete(app_state *state, const char *id) {                                   \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
       state->api.renderer.delete_##name(*(renderer_##name *)i->value);                             \
@@ -33,14 +33,14 @@
   }
 
 #define get_function(name, ENUM_NAME)                                                              \
-  renderer_##name asset_##name##_get_render(app_state *state, size_t id) {                         \
+  renderer_##name asset_##name##_get_render(app_state *state, const char *id) {                    \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME)                                                                 \
       return *(renderer_##name *)i->value;                                                         \
     return renderer_##name{};                                                                      \
   }
 
-asset_index *_asset_table_find(app_state *state, size_t id) {
+asset_index *_asset_table_find(app_state *state, const char *id) {
   return (asset_index *)hash_table_search(state->assets.asset_lookup, id);
 }
 
@@ -59,7 +59,7 @@ static void init_default_assets(app_state *state) {
     m.index_count = 6;
     m.vertex_count = 4;
 
-    asset_mesh_create(state, HASH_KEY("Quad"), &m);
+    asset_mesh_create(state, "Quad", &m);
   }
 }
 

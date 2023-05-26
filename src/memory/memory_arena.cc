@@ -47,19 +47,19 @@ mem_arena arena_create(size_t max_size) {
 }
 
 void arena_grow(mem_arena &arena, size_t min_size) {
-  // Spin until all growth opperations are completed in other threads
-  while (arena.grow_semaphore.load())
-    _mm_pause();
-
-  // Might be a bug here, should be a compare and exchange? Maybe we can force ordering with a flag?
-  arena.grow_semaphore.store(true);
-
   // Round the size to the next page size
   size_t alloc = ((min_size + page_size - 1) / page_size) * (page_size);
 
   // Check if we really need to grow the arena
   if (alloc < arena.allocated_size)
     return;
+
+  // Spin until all growth opperations are completed in other threads
+  while (arena.grow_semaphore.load())
+    _mm_pause();
+
+  // Might be a bug here, should be a compare and exchange? Maybe we can force ordering with a flag?
+  arena.grow_semaphore.store(true);
 
   SPACE_ASSERT(alloc <= arena.max_size, "Tried to grow arena beyond its capacity!");
 

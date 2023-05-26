@@ -6,7 +6,7 @@
 void render_fullscreen_quad(app_state *state, renderer_pipeline p, renderer_texture tex) {
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
-  renderer_mesh m = asset_mesh_get_render(state, HASH_KEY("Quad"));
+  renderer_mesh m = asset_mesh_get_render(state, "Quad");
 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);

@@ -140,14 +140,10 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
   for (int i = 0; i < result->count; i++) {
     switch (result->result.set[i].type) {
     case ASSET_TYPE_TEXTURE:
-      asset_texture_create(state,
-                           HASH_KEY(result->result.set[i].name),
-                           &result->result.set[i].texture);
+      asset_texture_create(state, result->result.set[i].name, &result->result.set[i].texture);
       break;
     case ASSET_TYPE_PIPELINE:
-      asset_pipeline_create(state,
-                            HASH_KEY(result->result.set[i].name),
-                            &result->result.set[i].pipeline);
+      asset_pipeline_create(state, result->result.set[i].name, &result->result.set[i].pipeline);
       break;
     default:
       return result_err("Unknown asset type");

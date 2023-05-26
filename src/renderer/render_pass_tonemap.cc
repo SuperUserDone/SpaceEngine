@@ -8,6 +8,7 @@ void render_pass_tonemap(app_state *state) {
   state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
   state->api.renderer.clear(0.0, 0.0, 0.0, 1.0);
   render_fullscreen_quad(state,
-                         asset_pipeline_get_render(state, HASH_KEY("tonemap")),
+                         asset_pipeline_get_render(state, "tonemap"),
                          state->game.renderer.bloom_buffer_textures[0]);
+
 }
