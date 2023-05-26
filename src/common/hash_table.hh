@@ -15,6 +15,7 @@
 #include "common/hash.hh"
 #include "memory/memory_arena.hh"
 #include "win32_export.hh"
+#include <corecrt_malloc.h>
 #include <string.h>
 
 struct hash_table_entry {
@@ -41,7 +42,12 @@ static inline bool hash_table_insert(hash_table &t, const char *key, void *value
   size_t hash = HASH_KEY(key);
 
   size_t location = hash % t.size;
-  hash_table_entry entry = {key, hash, value, 0};
+
+  size_t key_len = strlen(key);
+  char *key_copy = new char[key_len + 1];
+  strcpy_s(key_copy, key_len+1, key);
+
+  hash_table_entry entry = {key_copy, hash, value, 0};
 
   while (t.e[location].val != nullptr) {
     if (entry.cost > t.e[location].cost) {
@@ -90,6 +96,7 @@ static inline void *hash_table_search(hash_table &t, const char *key) {
 static inline void hash_table_delete(hash_table &t, const char *key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   while (loc >= 0) {
+    delete[] t.e[loc].key;
     size_t pl = loc;
     loc = (loc + 1) % t.size;
     if (t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0) {
