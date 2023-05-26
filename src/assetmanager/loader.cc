@@ -68,7 +68,9 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
 void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
   ZoneScopedN("Load Proces Thread");
   while (1) {
-    size_t i = res->i++;
+    if(res->loaded.load() > res->count)
+      break;
+    size_t i = res->i.fetch_add(1);
     if (i >= res->count)
       break;
 

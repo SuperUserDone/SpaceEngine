@@ -36,7 +36,7 @@ mem_arena arena_create(size_t max_size) {
   a.max_size = max_size;
   a.allocated_size = page_size;
   // We reserve the page, but dont allocate it yet. Dont allow execution
-  a.base = VirtualAlloc(nullptr, a.max_size, MEM_RESERVE, PAGE_READWRITE);
+  a.base = VirtualAlloc(nullptr, a.max_size, MEM_RESERVE, PAGE_NOACCESS);
 
   SPACE_ASSERT(a.base, "Could not allocate space for arena!");
 

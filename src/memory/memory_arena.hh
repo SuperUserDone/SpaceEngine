@@ -88,7 +88,7 @@ static inline void *arena_push_atomic(mem_arena &arena, size_t size) {
   bool done = false;
   void *base = nullptr;
   while (!done) {
-    size_t arena_size = arena.size;
+    size_t arena_size = arena.size.load();
 
     // Grow the arena if it is too small
     if (arena_size + size >= arena.allocated_size) {
