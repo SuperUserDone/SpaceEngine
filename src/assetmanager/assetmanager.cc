@@ -1,5 +1,6 @@
 #include "assetmanager.hh"
 #include "common/hash.hh"
+#include "common/result.hh"
 #include "tracy/Tracy.hpp"
 
 #define create_function(name, ENUM_NAME)                                                           \
@@ -33,11 +34,11 @@
   }
 
 #define get_function(name, ENUM_NAME)                                                              \
-  renderer_##name asset_##name##_get_render(app_state *state, const char *id) {                    \
+  result<renderer_##name> asset_##name##_get_render(app_state *state, const char *id) {            \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME)                                                                 \
-      return *(renderer_##name *)i->value;                                                         \
-    return renderer_##name{};                                                                      \
+      return result_ok(*(renderer_##name *)i->value);                                              \
+    return result_err<renderer_##name>("Could not find " #name " %s", id);                                          \
   }
 
 asset_index *_asset_table_find(app_state *state, const char *id) {
