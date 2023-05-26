@@ -4,7 +4,6 @@
 #include "data/asset_storage.hh"
 #include "memory/memory_scratch_arena.hh"
 
-
 #include <string>
 #include <unordered_map>
 
@@ -42,7 +41,7 @@ static std::unordered_map<std::string, pipeline_properties> pipeline_props = {
 };
 
 #define map_lookup(map, val)                                                                       \
-  auto it = map.find(str);                                                                         \
+  auto it = map.find(val);                                                            \
   if (it != map.end())                                                                             \
     return result_ok(it->second);
 
