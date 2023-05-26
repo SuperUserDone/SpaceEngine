@@ -1,13 +1,3 @@
-[texture] organic1
-  upsample "BILINEAR"
-  downsample "BILINEAR"
-  path "data/textures/organic.jpg"
-
-[pipeline] solar
-  frag "data/shaders/sol.frag.glsl"
-  vert "data/shaders/default.vert.glsl"
-  uniforms ["transform", "organic", "time", "sunColor", "raduis"]
-
 [pipeline] bloomus
   frag "data/shaders/bloomus.frag.glsl"
   vert "data/shaders/default.vert.glsl"
@@ -22,3 +12,4 @@
   frag "data/shaders/tonemap.frag.glsl"
   vert "data/shaders/default.vert.glsl"
   uniforms ["transform", "screenTex"]
+

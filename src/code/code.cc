@@ -3,7 +3,9 @@
 #include <imgui.h>
 
 void load_assets(app_state *state) {
-  asset_loader_load_file_sync(state, "data/base.sdef").get_no_err();
+  asset_loader_load_file_sync(state, "data/engine.sdef").get_no_err();
+  asset_loader_load_file_sync(state, "data/loading_screen.sdef").get_no_err();
+  asset_loader_load_file_sync(state, "data/game.sdef").get_no_err();
 }
 
 void init(app_state *state) {
