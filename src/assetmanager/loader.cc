@@ -112,16 +112,19 @@ async_load_result *asset_loader_load_async(mem_arena &arena,
   // allocate the asset data in the result
   res->result.set = arena_push_array(arena, asset_data, set.count);
 
-  int hw_threads = std::thread::hardware_concurrency();
+  {
+    ZoneScopedN("Start Loader Threads");
+    int hw_threads = std::thread::hardware_concurrency();
 
-  res->loader_thread_count =
-      std::min(std::max((int)hw_threads - 2, (int)1), MAX_NUM_LOADER_THREADS);
+    res->loader_thread_count =
+        std::min(std::max((int)hw_threads - 2, (int)1), MAX_NUM_LOADER_THREADS);
 
-  for (int i = 0; i < res->loader_thread_count; i++) {
-    res->loader_threads[i] = std::thread(process_thread, std::ref(arena), std::cref(set), res);
+    for (int i = 0; i < res->loader_thread_count; i++) {
+      res->loader_threads[i] = std::thread(process_thread, std::ref(arena), std::cref(set), res);
+    }
+
+    return res;
   }
-
-  return res;
 }
 
 APIFUNC result<async_load_result_info> asset_loader_async_query(async_load_result &result) {
@@ -162,6 +165,7 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
 }
 
 result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
+  ZoneScopedN("Load file Sync");
   mem_scratch_arena arena = arena_scratch_get();
 
   result_forward_err(set, asset_set_load_from_file(arena, filename));
@@ -178,6 +182,7 @@ result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
 result<async_load_result *> asset_loader_load_file_async(mem_arena &arena,
                                                          app_state *state,
                                                          const char *filename) {
+  ZoneScopedN("Load file Async start");
   result_forward_err(set, asset_set_load_from_file(arena, filename));
   async_load_result *res = asset_loader_load_async(arena, state, set);
 

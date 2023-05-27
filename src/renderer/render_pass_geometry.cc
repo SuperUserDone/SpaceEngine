@@ -1,6 +1,7 @@
 #include "renderer/render_pass_geometry.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/hash.hh"
+#include "tracy/Tracy.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -27,6 +28,8 @@ static void draw_star(app_state *state, glm::vec2 pos, float raduis, glm::vec3 c
 }
 
 void render_pass_geometry(app_state *state) {
+  ZoneScopedN("Geometry Pass");
+
   state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[0]);
   state->api.renderer.set_viewport(state->window_area.w, state->window_area.h);
   glm::vec3 cc = state->game.renderer.clear_color;

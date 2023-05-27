@@ -2,6 +2,7 @@
 #include "renderer/render_pass_bloom.hh"
 #include "renderer/render_pass_geometry.hh"
 #include "renderer/render_pass_tonemap.hh"
+#include "tracy/Tracy.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -25,6 +26,7 @@ void render_calculate_camera(app_state *state) {
 }
 
 void render_game(app_state *state) {
+  ZoneScopedN("Game Render");
   render_calculate_camera(state);
   render_pass_geometry(state);
   render_pass_bloom(state);

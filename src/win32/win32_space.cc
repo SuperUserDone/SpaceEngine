@@ -30,6 +30,8 @@ void hotreload_renderer(app_state *state);
 void hotreload_code(app_state *state);
 
 void init_imgui(app_state *state) {
+  ZoneScopedN("Init Imgui");
+
   win32_state *ws = (win32_state *)state->platform_state;
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -198,6 +200,7 @@ void run_game_loop(app_state *state) {
 }
 
 void init_sdl() {
+  ZoneScopedN("Init SDL");
   // Set dpi aware on windows
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
@@ -210,6 +213,7 @@ void init_sdl() {
 }
 
 void create_window(app_state *state) {
+  ZoneScopedN("Create Window");
   win32_state *ws = (win32_state *)state->platform_state;
   ws->window =
       SDL_CreateWindow("Space Game",
@@ -224,6 +228,7 @@ void create_window(app_state *state) {
 }
 
 void copy_dll(char *new_name, const char *dll) {
+  ZoneScopedN("Copy DLL");
   char name[MAX_PATH];
 
   strcpy_s(name, MAX_PATH, module_name);

@@ -5,6 +5,7 @@
 
 #define create_function(name, ENUM_NAME)                                                           \
   void asset_##name##_create(app_state *state, const char *id, name##_data *data) {                \
+    ZoneScopedN("Create " #name);                                                                  \
     asset_##name##_delete(state, id);                                                              \
     renderer_##name t = state->api.renderer.create_##name(data);                                   \
     renderer_##name *k = pool_alloc(state->assets.name##_data);                                    \
@@ -16,6 +17,7 @@
 
 #define update_function(name, ENUM_NAME)                                                           \
   void asset_##name##_update(app_state *state, const char *id, name##_data *data) {                \
+    ZoneScopedN("Update " #name);                                                                  \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
       state->api.renderer.update_##name((renderer_##name *)i->value, data);                        \
@@ -24,6 +26,7 @@
 
 #define delete_function(name, ENUM_NAME)                                                           \
   void asset_##name##_delete(app_state *state, const char *id) {                                   \
+    ZoneScopedN("Delete " #name);                                                                  \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME) {                                                               \
       state->api.renderer.delete_##name(*(renderer_##name *)i->value);                             \
@@ -35,10 +38,11 @@
 
 #define get_function(name, ENUM_NAME)                                                              \
   result<renderer_##name> asset_##name##_get_render(app_state *state, const char *id) {            \
+    ZoneScopedN("Get " #name);                                                                     \
     asset_index *i = _asset_table_find(state, id);                                                 \
     if (i && i->type == ENUM_NAME)                                                                 \
       return result_ok(*(renderer_##name *)i->value);                                              \
-    return result_err<renderer_##name>("Could not find " #name " %s", id);                                          \
+    return result_err<renderer_##name>("Could not find " #name " %s", id);                         \
   }
 
 asset_index *_asset_table_find(app_state *state, const char *id) {

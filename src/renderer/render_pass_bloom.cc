@@ -1,16 +1,18 @@
 #include "renderer/render_pass_bloom.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/hash.hh"
+#include "tracy/Tracy.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/glm.hpp>
 
 static void bloom_render_downsample(app_state *state) {
+  ZoneScopedN("Bloom Downsample");
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
   int32_t firstpass = 1;
 
   for (int i = 0; i < state->game.renderer.bloom_iters; i++) {
-
+    ZoneScopedN("Bloom Downsample Itteration");
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
     glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
     renderer_mesh m = asset_mesh_get_render(state, "Quad");
@@ -38,12 +40,13 @@ static void bloom_render_downsample(app_state *state) {
 }
 
 static void bloom_render_upsample(app_state *state) {
+  ZoneScopedN("Bloom Downsample");
   glm::mat4 mvp = glm::ortho(0.f, 1.f, 0.f, 1.f, -1.f, 1.f);
 
   state->api.renderer.set_blending(BLEND_ADD);
 
   for (int i = state->game.renderer.bloom_iters - 1; i >= 0; i--) {
-
+    ZoneScopedN("Bloom Upsample Itteration");
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
 
     renderer_mesh m = asset_mesh_get_render(state, "Quad");
@@ -69,11 +72,13 @@ static void bloom_render_upsample(app_state *state) {
 }
 
 void render_pass_bloom(app_state *state) {
+  ZoneScopedN("Render Bloom");
   bloom_render_downsample(state);
   bloom_render_upsample(state);
 }
 
 void render_pass_bloom_init(app_state *state) {
+  ZoneScopedN("Bloom init");
   glm::uvec2 window = {state->window_area.w, state->window_area.h};
   state->game.renderer.bloom_iters = MAX_BLOOM_ITERATIONS;
   for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
@@ -104,6 +109,7 @@ void render_pass_bloom_init(app_state *state) {
 }
 
 void render_pass_bloom_resize(app_state *state) {
+  ZoneScopedN("Bloom resize");
   glm::uvec2 window = {state->window_area.w, state->window_area.h};
   for (int i = 0; i < MAX_BLOOM_ITERATIONS; i++) {
     texture_data t;

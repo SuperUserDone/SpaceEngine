@@ -1,3 +1,5 @@
+// This file is a mess. Many of the things in here can be optimized, cleaned or otherwise
+
 #include "assetmanager/asset_set.hh"
 #include "common/file_utils.hh"
 #include "common/sdef_parser.hh"
@@ -20,7 +22,7 @@ enum pipeline_properties {
 };
 
 // The lookup tables for the enums. We use std::unordered_map here as our hashmap implementation is
-// overkill for this usecase an cannot be assigned to directly
+// not optimized for this usecase an cannot be assigned to directly
 static std::unordered_map<std::string, asset_type> asset_types = {
     {"texture", ASSET_TYPE_TEXTURE},
     {"pipeline", ASSET_TYPE_PIPELINE}};
@@ -41,7 +43,7 @@ static std::unordered_map<std::string, pipeline_properties> pipeline_props = {
 };
 
 #define map_lookup(map, val)                                                                       \
-  auto it = map.find(val);                                                            \
+  auto it = map.find(val);                                                                         \
   if (it != map.end())                                                                             \
     return result_ok(it->second);
 
