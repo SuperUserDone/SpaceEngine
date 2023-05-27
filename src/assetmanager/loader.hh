@@ -3,10 +3,14 @@
 // This is the interface used to load assests from disk to memory and later VRAM. The loading of
 // assets can be done async.
 
+#include "assetmanager/loader.hh"
 #include "common/result.hh"
 #include "data/app_state.hh"
 #include "data/asset_storage.hh"
 #include <string>
+#include <thread>
+
+#define MAX_NUM_LOADER_THREADS 8 
 
 struct asset_data {
   asset_type type;
@@ -30,6 +34,9 @@ struct async_load_result {
   std::string error;
   std::atomic_bool has_error;
   load_result result;
+
+  std::thread loader_threads[MAX_NUM_LOADER_THREADS];
+  size_t loader_thread_count;
 };
 
 struct async_load_result_info {

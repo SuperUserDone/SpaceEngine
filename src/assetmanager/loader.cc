@@ -1,6 +1,7 @@
 #include "loader.hh"
 #include "assetmanager/asset_set.hh"
 #include "assetmanager/assetmanager.hh"
+#include "assetmanager/loader.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
 #include "memory/memory_scratch_arena.hh"
@@ -68,8 +69,6 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
 void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
   ZoneScopedN("Load Proces Thread");
   while (1) {
-    if(res->loaded.load() > res->count)
-      break;
     size_t i = res->i.fetch_add(1);
     if (i >= res->count)
       break;
@@ -113,9 +112,13 @@ async_load_result *asset_loader_load_async(mem_arena &arena,
   // allocate the asset data in the result
   res->result.set = arena_push_array(arena, asset_data, set.count);
 
-  for (int i = 0; i < std::max((int)std::thread::hardware_concurrency() - 2, (int)1); i++) {
-    std::thread t(process_thread, std::ref(arena), std::cref(set), res);
-    t.detach();
+  int hw_threads = std::thread::hardware_concurrency();
+
+  res->loader_thread_count =
+      std::min(std::max((int)hw_threads - 2, (int)1), MAX_NUM_LOADER_THREADS);
+
+  for (int i = 0; i < res->loader_thread_count; i++) {
+    res->loader_threads[i] = std::thread(process_thread, std::ref(arena), std::cref(set), res);
   }
 
   return res;
@@ -131,9 +134,12 @@ APIFUNC result<async_load_result_info> asset_loader_async_query(async_load_resul
 result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result) {
   ZoneScopedN("Upload to VRAM");
   {
-    ZoneScopedN("Spin Wait");
-    while (result->loaded.load() < result->count && !result->has_error.load())
-      _mm_pause(); // Spin until available
+    ZoneScopedN("Join loader threads");
+
+    for (int i = 0; i < result->loader_thread_count; i++) {
+      if (result->loader_threads[i].joinable())
+        result->loader_threads[i].join();
+    }
   }
 
   if (result->has_error)
