@@ -6,6 +6,7 @@
 #include "memory/memory_arena.hh"
 #include "memory/memory_arena_typed.hh"
 #include "renderer/text/render_text.hh"
+#include "tracy/Tracy.hpp"
 
 #include <freetype/freetype.h>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -35,6 +36,8 @@ struct render_text_state {
   mesh_data rect_data;
   renderer_mesh rect_mesh;
 
+  bool tex_dirty;
+
   texture_data glyph_data;
   glm::uvec2 glyph_data_offset;
   size_t row_height;
@@ -49,6 +52,7 @@ struct render_text_state {
 };
 
 render_text_location create_glyph(size_t key, void *userdata) {
+  ZoneScopedN("Create Text Glyph");
   const int padding = PADDING;
   app_state *state = (app_state *)userdata;
   internal_info &info = state->render_text_state->info;
@@ -90,12 +94,17 @@ render_text_location create_glyph(size_t key, void *userdata) {
 
   rs->glyph_data_offset.x += size.x + padding;
   rs->row_height = std::max(rs->row_height, (size_t)size.y + padding);
+
+  state->render_text_state->tex_dirty = true;
   return location;
 }
 
 void update_gpu_texture(app_state *state) {
-  state->api.renderer.update_texture(&state->render_text_state->glyph_texture,
-                                     &state->render_text_state->glyph_data);
+  if (state->render_text_state->tex_dirty) {
+    state->api.renderer.update_texture(&state->render_text_state->glyph_texture,
+                                       &state->render_text_state->glyph_data);
+    state->render_text_state->tex_dirty = false;
+  }
 }
 
 void update_gpu_mesh(app_state *state) {
@@ -174,6 +183,8 @@ void render_text_init(app_state *state) {
   state->render_text_state->rect_mesh =
       state->api.renderer.create_mesh(&state->render_text_state->rect_data);
 
+  state->render_text_state->tex_dirty = false;
+
   init_ft(state);
   init_hb(state);
 }
@@ -219,29 +230,50 @@ void queue_rect(render_text_state *state,
 }
 
 void render_text_queue(app_state *state, int x, int y, const char *text) {
+  ZoneScopedN("Queue Draw Text");
+
   internal_info &info = state->render_text_state->info;
   glm::vec2 current_pos = {x, y};
 
-  hb_buffer_reset(info.hb_buffer);
+  {
+    ZoneScopedN("Reset Buffer");
+    hb_buffer_reset(info.hb_buffer);
+  }
 
-  hb_buffer_add_utf8(info.hb_buffer, text, -1, 0, -1);
-  hb_buffer_guess_segment_properties(info.hb_buffer);
+  {
+    ZoneScopedN("Add UTF8 Text to buffer");
+    hb_buffer_add_utf8(info.hb_buffer, text, -1, 0, -1);
+    hb_buffer_guess_segment_properties(info.hb_buffer);
+  }
 
-  hb_shape(info.hb_font, info.hb_buffer, NULL, 0);
+  {
+    ZoneScopedN("Shape");
+    hb_shape(info.hb_font, info.hb_buffer, NULL, 0);
+  }
 
-  uint32_t len = hb_buffer_get_length(info.hb_buffer);
-  hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(info.hb_buffer, NULL);
-  hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(info.hb_buffer, NULL);
+  {
+    ZoneScopedN("Process Glyphs");
+    uint32_t len = hb_buffer_get_length(info.hb_buffer);
+    hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(info.hb_buffer, NULL);
+    hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(info.hb_buffer, NULL);
 
-  for (size_t i = 0; i < len; i++) {
-    size_t cp = buffer_info[i].codepoint;
-    render_text_location glyph = *lru_cache_find(state->render_text_state->locations, cp);
+    for (size_t i = 0; i < len; i++) {
+      size_t cp = buffer_info[i].codepoint;
+      render_text_location glyph;
 
-    glm::vec2 rect_pos = current_pos + (glm::vec2((float)pos[i].x_offset, (float)pos[i].y_offset) / 64.f) + glyph.bearing;
-    glm::vec2 rect_size = glyph.isize;
+      {
+        ZoneScopedN("Lookup Glyph");
+        glyph = *lru_cache_find(state->render_text_state->locations, cp);
+      }
 
-    queue_rect(state->render_text_state, rect_pos, rect_size, glyph.uva, glyph.uvb);
-    current_pos += glm::vec2(pos[i].x_advance, -pos[i].y_advance) / 64.f;
+      glm::vec2 rect_pos = current_pos +
+                           (glm::vec2((float)pos[i].x_offset, (float)pos[i].y_offset) / 64.f) +
+                           glyph.bearing;
+      glm::vec2 rect_size = glyph.isize;
+
+      queue_rect(state->render_text_state, rect_pos, rect_size, glyph.uva, glyph.uvb);
+      current_pos += glm::vec2(pos[i].x_advance, -pos[i].y_advance) / 64.f;
+    }
   }
 }
 
@@ -250,7 +282,7 @@ void render_text_finishframe(app_state *state) {
   update_gpu_mesh(state);
 
   glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
-  //area /= state->window_area.dpi_scaling;
+  // area /= state->window_area.dpi_scaling;
 
   glm::mat4 mvp = glm::ortho(0.f, area.x, area.y, 0.f, -1.f, 1.f);
 
