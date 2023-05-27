@@ -27,7 +27,7 @@ void init(app_state *state) {
 
 void render(app_state *state) {
   render_game(state);
-  render_text_queue(state, 100, 100, u8"abcdefg DSAFGWGFKGS");
+  render_text_queue(state, 100, 100, u8"Some text");
 }
 
 void tick(app_state *state) {

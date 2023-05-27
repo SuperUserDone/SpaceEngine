@@ -116,7 +116,7 @@ void init_ft(app_state *state) {
     abort();
   if ((ft_error = FT_New_Face(info.ft_lib, "data/fonts/Roboto-Regular.ttf", 0, &info.ft_face)))
     abort();
-  if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 100)))
+  if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 48)))
     abort();
 }
 
@@ -225,9 +225,7 @@ void render_text_queue(app_state *state, int x, int y, const char *text) {
   hb_buffer_reset(info.hb_buffer);
 
   hb_buffer_add_utf8(info.hb_buffer, text, -1, 0, -1);
-  hb_buffer_set_direction(info.hb_buffer, HB_DIRECTION_LTR);
-  hb_buffer_set_script(info.hb_buffer, HB_SCRIPT_LATIN);
-  hb_buffer_set_language(info.hb_buffer, hb_language_from_string("en", -1));
+  hb_buffer_guess_segment_properties(info.hb_buffer);
 
   hb_shape(info.hb_font, info.hb_buffer, NULL, 0);
 
@@ -243,7 +241,7 @@ void render_text_queue(app_state *state, int x, int y, const char *text) {
     glm::vec2 rect_size = glyph.isize;
 
     queue_rect(state->render_text_state, rect_pos, rect_size, glyph.uva, glyph.uvb);
-    current_pos += glm::vec2(pos[i].x_advance, pos[i].y_advance) / 64.f;
+    current_pos += glm::vec2(pos[i].x_advance, -pos[i].y_advance) / 64.f;
   }
 }
 
