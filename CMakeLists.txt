@@ -9,6 +9,8 @@ option(ENABLE_PROFILING "" OFF)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
+find_package(harfbuzz CONFIG REQUIRED)
+find_package(Freetype REQUIRED)
 
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
@@ -20,10 +22,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(src imgui extern)
 
 add_library(imgui SHARED imgui/backends/imgui_impl_opengl3.cpp imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_demo.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp)
-add_library(space_common SHARED src/assetmanager/loader.cc src/memory/memory_scratch_arena.cc src/common/sdef_parser.cc src/common/timer.cc src/memory/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc src/assetmanager/asset_set.cc)
+add_library(space_common SHARED src/renderer/text/render_text.cc src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc src/assetmanager/loader.cc src/memory/memory_scratch_arena.cc src/common/sdef_parser.cc src/common/timer.cc src/memory/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc src/assetmanager/asset_set.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)
-add_library(space_renderer STATIC src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc)
 add_executable(space WIN32 src/win32/win32_space.cc imgui/backends/imgui_impl_sdl2.cpp)
 
 include_directories(tracy/public)
@@ -34,7 +35,7 @@ if(${ENABLE_PROFILING})
   set(ADD_LINKS tracy)
 endif()
 
-target_link_libraries(space_common glm::glm xxHash::xxhash imgui ${ADD_LINKS})
+target_link_libraries(space_common glm::glm xxHash::xxhash imgui Freetype::Freetype harfbuzz::harfbuzz ${ADD_LINKS})
 
 target_compile_definitions(space_common PRIVATE EXPORT_WIN PUBLIC ${ADD_DEFINES})
 target_compile_definitions(imgui PRIVATE "IMGUI_API=__declspec(dllexport)")
@@ -49,11 +50,10 @@ target_link_libraries(space
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 
-target_link_libraries(space_renderer PRIVATE glm::glm ${ADD_LINKS})
-target_link_libraries(space_code PRIVATE space_common space_renderer glm::glm ${ADD_LINKS})
+target_link_libraries(space_code PRIVATE space_common glm::glm ${ADD_LINKS})
 target_link_libraries(space_opengl PRIVATE space_common glm::glm ${ADD_LINKS})
 
-add_dependencies(space space_opengl space_common space_code space_renderer)
+add_dependencies(space space_opengl space_common space_code)
 
 set_target_properties(space_opengl PROPERTIES PDB_NAME "space_opengl_%random%")
 set_target_properties(space_code PROPERTIES PDB_NAME "space_code_%random%")

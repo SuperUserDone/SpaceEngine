@@ -13,3 +13,7 @@
   vert "data/shaders/default.vert.glsl"
   uniforms ["transform", "screenTex"]
 
+[pipeline] text
+  frag "data/shaders/font.frag.glsl"
+  vert "data/shaders/default.vert.glsl"
+  uniforms ["transform", "atlas"]

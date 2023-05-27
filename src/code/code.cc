@@ -1,10 +1,10 @@
 #include "assetmanager/loader.hh"
 #include "renderer/renderer.hh"
+#include "renderer/text/render_text.hh"
 #include <imgui.h>
 
 void load_assets(app_state *state) {
   asset_loader_load_file_sync(state, "data/engine.sdef").get_no_err();
-  asset_loader_load_file_sync(state, "data/loading_screen.sdef").get_no_err();
   asset_loader_load_file_sync(state, "data/game.sdef").get_no_err();
 }
 
@@ -27,6 +27,7 @@ void init(app_state *state) {
 
 void render(app_state *state) {
   render_game(state);
+  render_text_queue(state, 100, 100, u8"abcdefg DSAFGWGFKGS");
 }
 
 void tick(app_state *state) {

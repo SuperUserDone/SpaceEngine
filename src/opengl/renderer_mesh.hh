@@ -10,6 +10,11 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
   ZoneScopedN("Update GPU Mesh");
   internal_mesh *m = pool_get_at_index(rstate->internal_mesh_data, r->index);
 
+  r->triangle_vertex_count = data->index_count;
+
+  if(data->index_count == 0 && data->vertex_count == 0)
+    return;
+
   // Fill Buffers
   {
     glBindBuffer(GL_ARRAY_BUFFER, m->vb);
@@ -25,7 +30,6 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
                  GL_STREAM_DRAW);
   }
 
-  r->triangle_vertex_count = data->index_count;
 }
 
 static inline renderer_mesh create_mesh(mesh_data *data) {

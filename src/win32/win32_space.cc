@@ -4,8 +4,10 @@
 #include "common/timer.hh"
 #include "data/app_state.hh"
 #include "data/event.hh"
+#include "data/renderer_api.hh"
 #include "imgui.h"
 #include "memory/memory_arena.hh"
+#include "renderer/text/render_text.hh"
 #include "sdl_helpers/events.hh"
 #include "tracy/Tracy.hpp"
 #include "win32/win32_data.hh"
@@ -155,6 +157,10 @@ void run_game_loop(app_state *state) {
       TracyPlot("Time", state->time.t);
     }
 
+    { // Setup render text
+      render_text_newframe(state);
+    }
+
     // Run game update
     {
       ZoneScopedN("ProcessTicks");
@@ -186,6 +192,12 @@ void run_game_loop(app_state *state) {
 
         state->api.renderer.imgui_end();
       }
+    }
+
+    // Render text
+    {
+      ZoneScopedN("RenderText");
+      render_text_finishframe(state);
     }
 
     // Present screen
@@ -335,6 +347,7 @@ int main(int argc, char *argv[]) {
           "Failed to load renderer!");
 
       asset_system_init(&state);
+      render_text_init(&state);
     }
 
     {

@@ -6,6 +6,8 @@
 #include "memory/memory_arena.hh"
 #include "renderer_api.hh"
 
+struct render_text_state;
+
 struct app_state {
   game_state game;
   asset_storage assets;
@@ -15,6 +17,7 @@ struct app_state {
 
   void *renderer_state;
   void *platform_state;
+  render_text_state *render_text_state;
 
   char working_dir[260];
 
