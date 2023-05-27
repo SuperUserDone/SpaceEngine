@@ -83,7 +83,7 @@ inline const char *key_copy<const char *>(const char *in) {
   char *key_copy = new char[key_len + 1];
   strcpy_s(key_copy, key_len + 1, in);
 
-  return 0;
+  return key_copy;
 }
 
 template <typename key_type>
