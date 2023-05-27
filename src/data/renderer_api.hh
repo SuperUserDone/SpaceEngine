@@ -36,6 +36,8 @@ typedef void (*renderer_draw_meshes_fun)(size_t count,
 typedef void (*renderer_imgui_begin_fun)();
 typedef void (*renderer_imgui_end_fun)();
 
+typedef size_t (*renderer_get_max_texture_size_fun)();
+
 typedef void (*renderer_set_blending_fun)(blending_func f);
 
 struct renderer_api {
@@ -47,6 +49,7 @@ struct renderer_api {
   renderer_create_texture_fun create_texture;
   renderer_update_texture_fun update_texture;
   renderer_delete_texture_fun delete_texture;
+  renderer_get_max_texture_size_fun get_max_texture_size;
 
   renderer_create_pipeline_fun create_pipeline;
   renderer_delete_pipeline_fun delete_pipeline;

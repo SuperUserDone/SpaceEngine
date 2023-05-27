@@ -81,6 +81,13 @@ void imgui_end() {
   }
 }
 
+size_t get_max_texture_size() {
+  GLint ts;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &ts); 
+
+  return ts;
+}
+
 extern "C" {
 ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.init = renderer_init;
@@ -99,6 +106,7 @@ ALWAYS_EXPORT void fetch_api(app_state *state) {
   state->api.renderer.create_texture = create_texture;
   state->api.renderer.update_texture = update_texture;
   state->api.renderer.delete_texture = delete_texture;
+  state->api.renderer.get_max_texture_size = get_max_texture_size;
 
   state->api.renderer.create_mesh = create_mesh;
   state->api.renderer.update_mesh = update_mesh;
