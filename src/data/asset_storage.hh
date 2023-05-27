@@ -19,7 +19,7 @@ struct asset_index {
 };
 
 struct asset_storage {
-  hash_table asset_lookup;
+  hash_table<const char *, asset_index> asset_lookup;
 
   mem_pool<renderer_texture> texture_data;
   mem_pool<renderer_pipeline> pipeline_data;

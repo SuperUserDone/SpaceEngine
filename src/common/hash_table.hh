@@ -13,41 +13,100 @@
 // I've made the hashmap header only to force some more inlining
 
 #include "common/hash.hh"
+#include "common/hash_table.hh"
 #include "memory/memory_arena.hh"
 #include "win32_export.hh"
 #include <corecrt_malloc.h>
 #include <string.h>
 
+template <typename key_type, typename val_type>
 struct hash_table_entry {
-  const char *key;
+  key_type key;
   size_t hash;
-  void *val;
+  val_type *val;
   int32_t cost;
 };
 
+template <typename key_type, typename val_type>
 struct hash_table {
-  hash_table_entry *e;
+  hash_table_entry<key_type, val_type> *e;
   size_t nentries;
+
+  size_t (*hash_fun)(key_type type);
+  bool (*comp_fun)(key_type l, key_type r);
   size_t size;
 };
 
-static inline hash_table hash_table_create(mem_arena &a, size_t size = 0xffff) {
-  return {arena_push_array_zero(a, hash_table_entry, size), 0, size};
+template <typename T>
+static inline size_t hash_table_default_hash(T in) {
+  return in;
 }
 
-static inline bool hash_table_insert(hash_table &t, const char *key, void *value) {
+template <>
+inline size_t hash_table_default_hash<const char *>(const char *string) {
+  return HASH_KEY(string);
+}
+
+template <typename T>
+static inline bool hash_table_default_compare(T a, T b) {
+  return a == b;
+}
+
+template <>
+inline bool hash_table_default_compare<const char *>(const char *string1, const char *string2) {
+  return strcmp(string1, string2) == 0;
+}
+
+template <typename key_type = const char *, typename val_type = void *>
+static inline hash_table<key_type, val_type> hash_table_create(
+    mem_arena &a,
+    size_t size = 0xffff,
+    size_t (*hash_fun)(key_type type) = hash_table_default_hash<key_type>,
+    bool (*comp_fun)(key_type l, key_type r) = hash_table_default_compare<key_type>) {
+
+  return {(hash_table_entry<key_type, val_type> *)
+              arena_push_zero(a, sizeof(hash_table_entry<key_type, val_type>) * size),
+          0,
+          hash_fun,
+          comp_fun,
+          size};
+}
+
+template <typename key_type>
+static inline key_type key_copy(key_type in) {
+  return in;
+}
+
+template <>
+inline const char *key_copy<const char *>(const char *in) {
+  size_t key_len = strlen(in);
+  char *key_copy = new char[key_len + 1];
+  strcpy_s(key_copy, key_len + 1, in);
+
+  return 0;
+}
+
+template <typename key_type>
+static inline void key_delete(key_type in) {
+}
+
+template <>
+inline void key_delete<const char *>(const char *in) {
+  delete[] in;
+}
+
+template <typename key_type, typename val_type>
+static inline bool hash_table_insert(hash_table<key_type, val_type> &t,
+                                     key_type key,
+                                     val_type *value) {
   if (t.size == t.nentries)
     return false;
 
-  size_t hash = HASH_KEY(key);
+  size_t hash = t.hash_fun(key);
 
   size_t location = hash % t.size;
 
-  size_t key_len = strlen(key);
-  char *key_copy = new char[key_len + 1];
-  strcpy_s(key_copy, key_len+1, key);
-
-  hash_table_entry entry = {key_copy, hash, value, 0};
+  hash_table_entry<key_type, val_type> entry = {key_copy(key), hash, value, 0};
 
   while (t.e[location].val != nullptr) {
     if (entry.cost > t.e[location].cost) {
@@ -63,8 +122,10 @@ static inline bool hash_table_insert(hash_table &t, const char *key, void *value
   return true;
 };
 
-static inline int64_t _hash_table_get_key_location(hash_table &t, const char *key) {
-  size_t hash = HASH_KEY(key);
+template <typename key_type, typename val_type>
+static inline int64_t _hash_table_get_key_location(hash_table<key_type, val_type> &t,
+                                                   key_type key) {
+  size_t hash = t.hash_fun(key);
 
   size_t location = hash % t.size;
 
@@ -72,8 +133,7 @@ static inline int64_t _hash_table_get_key_location(hash_table &t, const char *ke
   for (size_t cost = 0; t.e[location].cost >= cost; cost++, location++) {
     location = location % t.size;
 
-    if (t.e[location].hash == hash && key[0] == t.e[location].key[0] &&
-        (strcmp(key + 1, t.e[location].key + 1) == 0)) {
+    if (t.e[location].hash == hash && t.comp_fun(t.e[location].key, key)) {
       loc = location;
       break;
     }
@@ -84,7 +144,8 @@ static inline int64_t _hash_table_get_key_location(hash_table &t, const char *ke
 
 // We use the linear search version of the hash lookup, as we do not need the better organ or smart
 // lookup functions in the paper.
-static inline void *hash_table_search(hash_table &t, const char *key) {
+template <typename key_type, typename val_type>
+static inline val_type *hash_table_search(hash_table<key_type, val_type> &t, key_type key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   if (loc >= 0) {
     return t.e[loc].val;
@@ -93,17 +154,18 @@ static inline void *hash_table_search(hash_table &t, const char *key) {
   }
 }
 
-static inline void hash_table_delete(hash_table &t, const char *key) {
+template <typename key_type, typename val_type>
+static inline void hash_table_delete(hash_table<key_type, val_type> &t, key_type key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   while (loc >= 0) {
-    delete[] t.e[loc].key;
+    key_delete(t.e[loc].key);
     size_t pl = loc;
     loc = (loc + 1) % t.size;
     if (t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0) {
       t.e[pl] = t.e[loc];
       t.e[pl].cost--;
     } else {
-      t.e[pl] = hash_table_entry{0, 0, 0, 0};
+      t.e[pl] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
       break;
     }
   }

@@ -1,6 +1,7 @@
 #include "assetmanager.hh"
 #include "common/hash.hh"
 #include "common/result.hh"
+#include "data/asset_storage.hh"
 #include "tracy/Tracy.hpp"
 
 #define create_function(name, ENUM_NAME)                                                           \
@@ -12,7 +13,7 @@
     *k = t;                                                                                        \
     asset_index *i = pool_alloc(state->assets.index_table);                                        \
     *i = asset_index{ENUM_NAME, (void *)k};                                                        \
-    hash_table_insert(state->assets.asset_lookup, id, (void *)i);                                  \
+    hash_table_insert(state->assets.asset_lookup, id, i);                                  \
   }
 
 #define update_function(name, ENUM_NAME)                                                           \
@@ -76,7 +77,7 @@ void asset_system_init(app_state *state) {
   state->assets.mesh_data = pool_create<renderer_mesh>(1024);
   state->assets.framebuffer_data = pool_create<renderer_framebuffer>(1024);
 
-  state->assets.asset_lookup = hash_table_create(state->permanent_arena);
+  state->assets.asset_lookup = hash_table_create<const char *, asset_index>(state->permanent_arena);
   state->assets.index_table = pool_create<asset_index>(1024);
 
   init_default_assets(state);

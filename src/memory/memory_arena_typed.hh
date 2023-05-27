@@ -19,11 +19,13 @@ static inline mem_arena_typed<T> arena_typed_create(size_t max_elements) {
   mem_arena_typed<T> mem;
 
   mem.arena = arena_create(max_elements * sizeof(T));
+
+  return mem;
 }
 
 template <typename T>
 static inline void arena_typed_free(mem_arena_typed<T> &arena) {
-  arena_free(arena);
+  arena_free(arena.arena);
 }
 
 template <typename T>
