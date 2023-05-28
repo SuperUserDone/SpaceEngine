@@ -49,6 +49,8 @@ struct render_text_state {
   lru_cache<size_t, render_text_location> locations;
 
   internal_info info;
+
+  size_t line_height;
 };
 
 render_text_location create_glyph(size_t key, void *userdata) {
@@ -127,6 +129,8 @@ void init_ft(app_state *state) {
     abort();
   if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 48)))
     abort();
+
+  state->render_text_state->line_height = info.ft_face->height;
 }
 
 void init_hb(app_state *state) {
@@ -266,9 +270,12 @@ void render_text_queue(app_state *state, int x, int y, const char *text) {
         glyph = *lru_cache_find(state->render_text_state->locations, cp);
       }
 
-      glm::vec2 rect_pos = current_pos +
-                           (glm::vec2((float)pos[i].x_offset, (float)pos[i].y_offset) / 64.f) +
-                           glyph.bearing;
+      glm::vec2 rect_pos =
+          current_pos +
+          (glm::vec2((float)pos[i].x_offset,
+                     (float)state->render_text_state->line_height - pos[i].y_offset) /
+           64.f) +
+          glyph.bearing;
       glm::vec2 rect_size = glyph.isize;
 
       queue_rect(state->render_text_state, rect_pos, rect_size, glyph.uva, glyph.uvb);
