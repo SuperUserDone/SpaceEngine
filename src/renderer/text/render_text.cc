@@ -5,6 +5,7 @@
 #include "data/asset_types.hh"
 #include "memory/memory_arena.hh"
 #include "memory/memory_arena_typed.hh"
+#include "renderer/render_batch.hh"
 #include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
 
@@ -33,18 +34,13 @@ struct internal_info {
 };
 
 struct render_text_state {
-  mesh_data rect_data;
-  renderer_mesh rect_mesh;
-
+  render_batch batch;
   bool tex_dirty;
 
   texture_data glyph_data;
   glm::uvec2 glyph_data_offset;
   size_t row_height;
   renderer_texture glyph_texture;
-
-  mem_arena_typed<vertex> verticies_arena;
-  mem_arena_typed<uint32_t> indicies_arena;
 
   lru_cache<size_t, render_text_location> locations;
 
@@ -109,11 +105,6 @@ void update_gpu_texture(app_state *state) {
   }
 }
 
-void update_gpu_mesh(app_state *state) {
-  state->api.renderer.update_mesh(&state->render_text_state->rect_mesh,
-                                  &state->render_text_state->rect_data);
-}
-
 void delete_glyph(render_text_location value, void *userdata) {
   app_state *state = (app_state *)userdata;
 }
@@ -153,15 +144,6 @@ void quit_hb(app_state *state) {
 void render_text_init(app_state *state) {
   state->render_text_state = arena_push_struct(state->permanent_arena, render_text_state);
 
-  state->render_text_state->verticies_arena = arena_typed_create<vertex>(65536 * 4);
-  state->render_text_state->indicies_arena = arena_typed_create<uint32_t>(65536 * 6);
-
-  state->render_text_state->rect_data.verticies =
-      (vertex *)state->render_text_state->verticies_arena.arena.base;
-
-  state->render_text_state->rect_data.indicies =
-      (uint32_t *)state->render_text_state->indicies_arena.arena.base;
-
   state->render_text_state->locations =
       lru_cache_create(state->permanent_arena, 65536, create_glyph, delete_glyph, state);
 
@@ -181,13 +163,9 @@ void render_text_init(app_state *state) {
   state->render_text_state->glyph_data_offset = {PADDING, PADDING};
   state->render_text_state->row_height = 0;
 
-  state->render_text_state->rect_data.vertex_count = 0;
-  state->render_text_state->rect_data.index_count = 0;
-
-  state->render_text_state->rect_mesh =
-      state->api.renderer.create_mesh(&state->render_text_state->rect_data);
-
   state->render_text_state->tex_dirty = false;
+
+  state->render_text_state->batch = render_batch_create(state);
 
   init_ft(state);
   init_hb(state);
@@ -196,17 +174,10 @@ void render_text_init(app_state *state) {
 void render_text_quit(app_state *state) {
   quit_hb(state);
   quit_ft(state);
-
-  arena_typed_free(state->render_text_state->indicies_arena);
-  arena_typed_free(state->render_text_state->verticies_arena);
 }
 
 void render_text_newframe(app_state *state) {
-  arena_typed_clear(state->render_text_state->indicies_arena);
-  arena_typed_clear(state->render_text_state->verticies_arena);
-
-  state->render_text_state->rect_data.vertex_count = 0;
-  state->render_text_state->rect_data.index_count = 0;
+  render_batch_reset(state->render_text_state->batch);
 }
 
 void queue_rect(render_text_state *state,
@@ -214,23 +185,10 @@ void queue_rect(render_text_state *state,
                 glm::vec2 size,
                 glm::vec2 uva,
                 glm::vec2 uvb) {
-  *arena_typed_push(state->verticies_arena) = vertex{pos, uva};
-  *arena_typed_push(state->verticies_arena) =
-      vertex{glm::vec2(pos.x, pos.y + size.y), glm::vec2(uva.x, uvb.y)};
-  *arena_typed_push(state->verticies_arena) =
-      vertex{glm::vec2(pos.x + size.x, pos.y + size.y), uvb};
-  *arena_typed_push(state->verticies_arena) =
-      vertex{glm::vec2(pos.x + size.x, pos.y), glm::vec2{uvb.x, uva.y}};
 
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 0;
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 1;
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 2;
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 0;
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 2;
-  *arena_typed_push(state->indicies_arena) = state->rect_data.vertex_count + 3;
+  rect r = {pos, size, uva, uvb};
 
-  state->rect_data.index_count += 6;
-  state->rect_data.vertex_count += 4;
+  render_batch_add_rect(state->batch, r);
 }
 
 void render_text_queue(app_state *state, int x, int y, const char *text) {
@@ -286,21 +244,17 @@ void render_text_queue(app_state *state, int x, int y, const char *text) {
 
 void render_text_finishframe(app_state *state) {
   update_gpu_texture(state);
-  update_gpu_mesh(state);
 
   glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
   // area /= state->window_area.dpi_scaling;
 
   glm::mat4 mvp = glm::ortho(0.f, area.x, area.y, 0.f, -1.f, 1.f);
 
-  renderer_mesh *mp = &state->render_text_state->rect_mesh;
-
   renderer_pipeline p = asset_pipeline_get_render(state, "text");
-
+ 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);
   pipeline_settings_set_uniform(settings, 1, state->render_text_state->glyph_texture);
 
-  pipeline_settings *pp = &settings;
-  state->api.renderer.draw_meshes(1, &mp, &pp, &p);
+  render_batch_render(state, state->render_text_state->batch, p, settings);
 }
