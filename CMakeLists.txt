@@ -22,7 +22,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(src imgui extern)
 
 add_library(imgui SHARED imgui/backends/imgui_impl_opengl3.cpp imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_demo.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp)
-add_library(space_common SHARED src/renderer/text/render_text.cc src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc src/assetmanager/loader.cc src/memory/memory_scratch_arena.cc src/common/sdef_parser.cc src/common/timer.cc src/memory/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc src/assetmanager/asset_set.cc)
+add_library(space_common SHARED src/renderer/render_batch.cc src/renderer/text/render_text.cc src/renderer/renderer.cc src/renderer/render_utils.cc src/renderer/render_pass_tonemap.cc src/renderer/render_pass_geometry.cc src/renderer/render_pass_bloom.cc src/assetmanager/loader.cc src/memory/memory_scratch_arena.cc src/common/sdef_parser.cc src/common/timer.cc src/memory/memory_arena.cc src/common/debug.cc src/assetmanager/assetmanager.cc src/assetmanager/asset_set.cc)
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)
 add_executable(space WIN32 src/win32/win32_space.cc imgui/backends/imgui_impl_sdl2.cpp)
