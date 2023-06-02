@@ -3,6 +3,7 @@
 #include "common/lru_cache.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
+#include "data/glm_exts.hh"
 #include "memory/memory_arena.hh"
 #include "memory/memory_arena_typed.hh"
 #include "renderer/render_batch.hh"
@@ -11,9 +12,11 @@
 
 #include <freetype/freetype.h>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
 #include <harfbuzz/hb-ft.h>
 #include <harfbuzz/hb.h>
+#include <limits>
 #include <stdint.h>
 
 #define PADDING 1
@@ -118,7 +121,7 @@ void init_ft(app_state *state) {
     abort();
   if ((ft_error = FT_New_Face(info.ft_lib, "data/fonts/Roboto-Regular.ttf", 0, &info.ft_face)))
     abort();
-  if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 48)))
+  if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 128)))
     abort();
 
   state->render_text_state->line_height = info.ft_face->height;
@@ -187,6 +190,10 @@ void queue_rect(render_text_state *state,
                 glm::vec2 uvb) {
 
   rect r = {pos, size, uva, uvb};
+  // Don't draw if size == 0
+  if (size == glm::vec2(0)) {
+    return;
+  }
 
   render_batch_add_rect(state->batch, r);
 }
@@ -251,7 +258,7 @@ void render_text_finishframe(app_state *state) {
   glm::mat4 mvp = glm::ortho(0.f, area.x, area.y, 0.f, -1.f, 1.f);
 
   renderer_pipeline p = asset_pipeline_get_render(state, "text");
- 
+
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);
   pipeline_settings_set_uniform(settings, 1, state->render_text_state->glyph_texture);
