@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/hash_table.hh"
+#include "data/asset_storage.hh"
 #include "data/asset_types.hh"
 #include "memory/memory_arena.hh"
 #include "memory/memory_arena_typed.hh"
@@ -10,7 +11,8 @@ enum asset_type {
   ASSET_TYPE_TEXTURE,
   ASSET_TYPE_PIPELINE,
   ASSET_TYPE_MESH,
-  ASSET_TYPE_FRAMEBUFFER
+  ASSET_TYPE_FRAMEBUFFER,
+  ASSET_TYPE_FONT
 };
 
 struct asset_index {

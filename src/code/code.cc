@@ -1,3 +1,4 @@
+#include "assetmanager/assetmanager.hh"
 #include "assetmanager/loader.hh"
 #include "data/asset_types.hh"
 #include "renderer/renderer.hh"
@@ -24,8 +25,6 @@ void init(app_state *state) {
 
   state->game.renderer.clear_color = glm::vec3(0.05, 0.053, 0.06);
 
-  font_data fd = {"data/fonts/Roboto-Regular.ttf"};
-  state->game.font = render_font_create(state, &fd);
   state->game.font_size = 32;
   state->game.text = new char[256];
 
@@ -36,9 +35,10 @@ void init(app_state *state) {
 
 void render(app_state *state) {
   render_game(state);
-  render_font_reset(state, state->game.font);
-  render_text(state, state->game.font, state->game.font_size, {100, 100}, state->game.text);
-  render_font_finish(state, state->game.font);
+  renderer_font font = asset_font_get_render(state, "default");
+  render_font_reset(state, font);
+  render_text(state, font, state->game.font_size, {100, 100}, state->game.text);
+  render_font_finish(state, font);
 }
 
 void tick(app_state *state) {
@@ -72,7 +72,9 @@ void draw_debug_info(app_state *state) {
   ImGui::DragInt("Font size", &font_size);
   state->game.font_size = font_size;
 
-  ImGui::Image((void*)(size_t)render_font_get_texture(state, state->game.font).index, {256, 256});
+  ImGui::Image(
+      (void *)(size_t)render_font_get_texture(state, asset_font_get_render(state, "default")).index,
+      {256, 256});
 
   ImGui::End();
 }

@@ -30,7 +30,7 @@ struct render_text_location {
   glm::vec2 uva;
   glm::vec2 uvb;
   glm::vec2 bearing;
-  glm::ivec2 isize;
+  glm::vec2 isize;
 };
 
 struct internal_size_info {
@@ -43,6 +43,7 @@ struct internal_size_info {
 
 struct internal_font {
   FT_Face ft_face;
+  void *font_face_data;
 
   render_batch batch;
   texture_data glyph_data;
@@ -69,7 +70,7 @@ render_text_location create_glyph(size_t key, void *userdata) {
   const int padding = PADDING;
   internal_font *state = (internal_font *)userdata;
 
-  uint32_t font_size = key >> 32;
+  uint32_t font_size = (key >> 32);
   uint32_t codepoint = key & 0xffffffff;
 
   internal_size_info *size_info = hash_table_search(state->size_lookup, font_size);
@@ -150,9 +151,15 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   internal_font *i_font = pool_alloc(state->render_text_state->fonts);
   i_font->invalidate = false;
 
-  SPACE_ASSERT(!FT_New_Face(info->ft_lib, data->file_name, 0, &i_font->ft_face),
-               "Could not load face %s",
-               data->file_name);
+  i_font->font_face_data = new uint8_t[data->file_len];
+  memcpy(i_font->font_face_data, data->file_data, data->file_len);
+
+  SPACE_ASSERT(!FT_New_Memory_Face(info->ft_lib,
+                                   (FT_Byte *)i_font->font_face_data,
+                                   data->file_len,
+                                   0,
+                                   &i_font->ft_face),
+               "Could not load face!");
   i_font->locations =
       lru_cache_create(state->permanent_arena, 1024, create_glyph, delete_glyph, i_font);
   i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
@@ -266,7 +273,7 @@ void render_text(app_state *state,
       }
 
       glm::vec2 rect_pos = current_pos +
-                           (glm::vec2((float)pos[i].x_offset, i_size->line_height-pos[i].y_offset) / 64.f) +
+                           (glm::vec2((float)pos[i].x_offset, -pos[i].y_offset) / 64.f) +
                            glyph.bearing;
       glm::vec2 rect_size = glyph.isize;
 
@@ -305,4 +312,8 @@ void render_font_finish(app_state *state, renderer_font font) {
   pipeline_settings_set_uniform(settings, 1, i_font->glyph_texture);
 
   render_batch_render(state, i_font->batch, p, settings);
+}
+
+void render_font_delete(app_state *state, renderer_font font) {
+  // TODO
 }

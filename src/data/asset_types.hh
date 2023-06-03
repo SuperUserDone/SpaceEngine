@@ -90,5 +90,6 @@ struct renderer_font {
 };
 
 struct font_data {
-  const char *file_name;
+  void *file_data;
+  size_t file_len;
 };

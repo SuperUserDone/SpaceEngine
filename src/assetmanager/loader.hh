@@ -7,6 +7,7 @@
 #include "common/result.hh"
 #include "data/app_state.hh"
 #include "data/asset_storage.hh"
+#include "data/asset_types.hh"
 #include <string>
 #include <thread>
 
@@ -19,6 +20,7 @@ struct asset_data {
   union {
     texture_data texture;
     pipeline_data pipeline;
+    font_data font;
   };
 };
 

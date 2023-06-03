@@ -4,6 +4,9 @@
 #include "assetmanager/loader.hh"
 #include "common/file_utils.hh"
 #include "common/hash.hh"
+#include "common/result.hh"
+#include "data/asset_storage.hh"
+#include "memory/memory_arena.hh"
 #include "memory/memory_scratch_arena.hh"
 #include "tracy/Tracy.hpp"
 #include <thread>
@@ -66,6 +69,16 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
   return result_ok<asset_data>(a);
 }
 
+result<asset_data> loader_load_font(mem_arena &arena, const asset_descriptor &desc) {
+  ZoneScopedN("Pipeline Load");
+  asset_data a;
+
+  a.type = ASSET_TYPE_FONT;
+  a.font.file_data = load_binary_file(arena, desc.font.path, a.font.file_len);
+
+  return result_ok(a);
+}
+
 void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
   ZoneScopedN("Load Proces Thread");
   while (1) {
@@ -80,6 +93,9 @@ void process_thread(mem_arena &arena, const asset_set &set, async_load_result *r
       break;
     case ASSET_TYPE_PIPELINE:
       data = loader_load_pipeline(arena, set.descriptors[i]);
+      break;
+    case ASSET_TYPE_FONT:
+      data = loader_load_font(arena, set.descriptors[i]);
       break;
     default:
       res->error = "Could not load asset";
@@ -155,6 +171,9 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
       break;
     case ASSET_TYPE_PIPELINE:
       asset_pipeline_create(state, result->result.set[i].name, &result->result.set[i].pipeline);
+      break;
+    case ASSET_TYPE_FONT:
+      asset_font_create(state, result->result.set[i].name, &result->result.set[i].font);
       break;
     default:
       return result_err("Unknown asset type");

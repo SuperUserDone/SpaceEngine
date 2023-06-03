@@ -2,6 +2,7 @@
 
 #include "assetmanager/asset_set.hh"
 #include "common/file_utils.hh"
+#include "common/result.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
 #include "memory/memory_scratch_arena.hh"
@@ -21,11 +22,15 @@ enum pipeline_properties {
   PP_UNIFORMS,
 };
 
+enum font_properties {
+  FP_PATH,
+};
+
 // The lookup tables for the enums. We use std::unordered_map here as our hashmap implementation is
 // not optimized for this usecase an cannot be assigned to directly
-static std::unordered_map<std::string, asset_type> asset_types = {
-    {"texture", ASSET_TYPE_TEXTURE},
-    {"pipeline", ASSET_TYPE_PIPELINE}};
+static std::unordered_map<std::string, asset_type> asset_types = {{"texture", ASSET_TYPE_TEXTURE},
+                                                                  {"pipeline", ASSET_TYPE_PIPELINE},
+                                                                  {"font", ASSET_TYPE_FONT}};
 
 static std::unordered_map<std::string, texture_filter> tex_filters = {
     {"BILINEAR", TEX_FILTER_LINEAR},
@@ -35,6 +40,8 @@ static std::unordered_map<std::string, texture_properties> tex_props = {
     {"upsample", TP_UPSAMPLE},
     {"downsample", TP_DOWNSAMPLE},
     {"path", TP_PATH}};
+
+static std::unordered_map<std::string, font_properties> font_props = {{"path", FP_PATH}};
 
 static std::unordered_map<std::string, pipeline_properties> pipeline_props = {
     {"frag", PP_FRAG},
@@ -65,6 +72,11 @@ result<texture_properties> tex_prop_from_str(const char *str) {
 result<pipeline_properties> pipeline_prop_from_str(const char *str) {
   map_lookup(pipeline_props, str);
   return result_err<pipeline_properties>("Unknown pipeline property %s", str);
+}
+
+result<font_properties> font_prop_from_str(const char *str) {
+  map_lookup(font_props, str);
+  return result_err<font_properties>("Unknown pipeline property %s", str);
 }
 
 const char *sdef_type_to_string(sdef_type type) {
@@ -233,6 +245,37 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
   return result_ok(true);
 }
 
+result<> parse_font(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
+  bool path_defined = false;
+
+  for (int i = 0; i < block.property_count; i++) {
+    result_forward_err(prop_type, font_prop_from_str(block.properties[i].name));
+    switch (prop_type) {
+    case FP_PATH: {
+      result_forward_err(_,
+                         typecheck(descriptor.name,
+                                   "fragment",
+                                   SDEF_TYPE_STRING,
+                                   path_defined,
+                                   block.properties[i]));
+
+      descriptor.font.path = arena_push_null_terminated_string(arena, block.properties[i].string);
+      path_defined = true;
+      break;
+    }
+    default:
+      return result_err("In font %s, unknown property %s",
+                        descriptor.name,
+                        block.properties[i].name);
+    }
+  }
+
+  if (!path_defined)
+    return result_err("In font %s no path was defined", descriptor.name);
+
+  return result_ok(true);
+}
+
 result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filename) {
   mem_scratch_arena scratch = arena_scratch_get();
   const char *file_content = load_file(scratch, filename);
@@ -255,6 +298,10 @@ result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filenam
     }
     case ASSET_TYPE_PIPELINE: {
       result_forward_err(_, parse_pipeline(arena, dom->blocks[i], s.descriptors[i]));
+      break;
+    }
+    case ASSET_TYPE_FONT: {
+      result_forward_err(_, parse_font(arena, dom->blocks[i], s.descriptors[i]));
       break;
     }
     default:

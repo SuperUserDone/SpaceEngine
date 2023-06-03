@@ -18,6 +18,9 @@ struct asset_descriptor {
       char **uniforms;
       size_t uniforms_count;
     } pipeline;
+    struct {
+      const char *path;
+    } font;
   };
 };
 

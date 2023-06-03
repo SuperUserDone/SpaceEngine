@@ -6,12 +6,12 @@
 #include "memory/memory_arena.hh"
 #include <stdio.h>
 
-static inline char *load_file(mem_arena &arena, const char *path) {
+static inline char *load_file(mem_arena &arena, const char *path, const char * mode = "r") {
   FILE *fp;
   size_t len = 0;
   size_t read;
 
-  fopen_s(&fp, path, "r");
+  fopen_s(&fp, path, mode);
 
   fseek(fp, 0, SEEK_END);
   len = ftell(fp);
@@ -20,6 +20,25 @@ static inline char *load_file(mem_arena &arena, const char *path) {
   char *buf = (char *)arena_push_atomic(arena, sizeof(char) * (len + 1));
   read = fread(buf, 1, len, fp);
   buf[read] = '\0';
+
+  fclose(fp);
+  return buf;
+}
+
+static inline void *load_binary_file(mem_arena &arena, const char *path, size_t &len, const char * mode = "rb") {
+  FILE *fp;
+  size_t read;
+
+  fopen_s(&fp, path, mode);
+
+  fseek(fp, 0, SEEK_END);
+  len = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  char *buf = (char *)arena_push_atomic(arena, sizeof(char) * (len));
+  read = fread(buf, 1, len, fp);
+
+  len = read;
 
   fclose(fp);
   return buf;

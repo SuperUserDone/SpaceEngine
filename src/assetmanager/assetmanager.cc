@@ -2,6 +2,8 @@
 #include "common/hash.hh"
 #include "common/result.hh"
 #include "data/asset_storage.hh"
+#include "data/asset_types.hh"
+#include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
 
 #define create_function(name, ENUM_NAME)                                                           \
@@ -13,7 +15,7 @@
     *k = t;                                                                                        \
     asset_index *i = pool_alloc(state->assets.index_table);                                        \
     *i = asset_index{ENUM_NAME, (void *)k};                                                        \
-    hash_table_insert(state->assets.asset_lookup, id, i);                                  \
+    hash_table_insert(state->assets.asset_lookup, id, i);                                          \
   }
 
 #define update_function(name, ENUM_NAME)                                                           \
@@ -76,6 +78,7 @@ void asset_system_init(app_state *state) {
   state->assets.pipeline_data = pool_create<renderer_pipeline>(1024);
   state->assets.mesh_data = pool_create<renderer_mesh>(1024);
   state->assets.framebuffer_data = pool_create<renderer_framebuffer>(1024);
+  state->assets.font_data = pool_create<renderer_font>(32);
 
   state->assets.asset_lookup = hash_table_create<const char *, asset_index>(state->permanent_arena);
   state->assets.index_table = pool_create<asset_index>(1024);
@@ -88,6 +91,7 @@ void asset_system_shutdown(app_state *state) {
   pool_free(state->assets.mesh_data);
   pool_free(state->assets.framebuffer_data);
   pool_free(state->assets.pipeline_data);
+  pool_free(state->assets.font_data);
   pool_free(state->assets.index_table);
 }
 
@@ -95,6 +99,16 @@ create_function(texture, ASSET_TYPE_TEXTURE);
 create_function(pipeline, ASSET_TYPE_PIPELINE);
 create_function(mesh, ASSET_TYPE_MESH);
 create_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
+void asset_font_create(app_state *state, const char *id, font_data *data) {
+  ZoneScopedN("Create Font");
+  asset_font_delete(state, id);
+  renderer_font t = render_font_create(state, data);
+  renderer_font *k = pool_alloc(state->assets.font_data);
+  *k = t;
+  asset_index *i = pool_alloc(state->assets.index_table);
+  *i = asset_index{ASSET_TYPE_FONT, (void *)k};
+  hash_table_insert(state->assets.asset_lookup, id, i);
+};
 
 update_function(texture, ASSET_TYPE_TEXTURE);
 update_function(mesh, ASSET_TYPE_MESH);
@@ -104,7 +118,20 @@ delete_function(pipeline, ASSET_TYPE_PIPELINE);
 delete_function(mesh, ASSET_TYPE_MESH);
 delete_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
 
+void asset_font_delete(app_state *state, const char *id) {
+  ZoneScopedN("Delete Font");
+  asset_index *i = _asset_table_find(state, id);
+
+  if (i && i->type == ASSET_TYPE_FONT) {
+    render_font_delete(state, *(renderer_font *)i->value);
+    pool_pop(state->assets.font_data, (renderer_font *)i->value);
+    pool_pop(state->assets.index_table, i);
+    hash_table_delete(state->assets.asset_lookup, id);
+  }
+};
+
 get_function(texture, ASSET_TYPE_TEXTURE);
 get_function(pipeline, ASSET_TYPE_PIPELINE);
 get_function(mesh, ASSET_TYPE_MESH);
 get_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
+get_function(font, ASSET_TYPE_FONT);

@@ -50,3 +50,7 @@ APIFUNC extern void asset_mesh_update(app_state *state, const char *id, mesh_dat
 APIFUNC extern void asset_mesh_delete(app_state *state, const char *id);
 // Used to get the renderer id of the mesh id
 APIFUNC extern result<renderer_mesh> asset_mesh_get_render(app_state *state, const char *id);
+
+APIFUNC extern void asset_font_create(app_state *state, const char *id, font_data *data);
+APIFUNC extern void asset_font_delete(app_state *state, const char *id);
+APIFUNC extern result<renderer_font> asset_font_get_render(app_state *state, const char *id);

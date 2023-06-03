@@ -17,3 +17,6 @@
   frag "data/shaders/font.frag.glsl"
   vert "data/shaders/default.vert.glsl"
   uniforms ["transform", "atlas"]
+
+[font] default 
+  path "data/fonts/Roboto-Regular.ttf"
