@@ -39,7 +39,7 @@ struct hash_table {
 
 template <typename T>
 static inline size_t hash_table_default_hash(T in) {
-  return in;
+  return (size_t)in;
 }
 
 template <>
@@ -61,8 +61,13 @@ template <typename key_type = const char *, typename val_type = void *>
 static inline hash_table<key_type, val_type> hash_table_create(
     mem_arena &a,
     size_t size = 0xffff,
-    size_t (*hash_fun)(key_type type) = hash_table_default_hash<key_type>,
-    bool (*comp_fun)(key_type l, key_type r) = hash_table_default_compare<key_type>) {
+    size_t (*hash_fun)(key_type type) = nullptr,
+    bool (*comp_fun)(key_type l, key_type r) = nullptr) {
+
+  if (!hash_fun)
+    hash_fun = hash_table_default_hash<key_type>;
+  if (!comp_fun)
+    comp_fun = hash_table_default_compare<key_type>;
 
   return {(hash_table_entry<key_type, val_type> *)
               arena_push_zero(a, sizeof(hash_table_entry<key_type, val_type>) * size),
