@@ -21,3 +21,5 @@ APIFUNC extern void render_text(app_state *state,
 
 APIFUNC extern void render_font_finish(app_state *state, renderer_font font);
 APIFUNC extern void render_font_reset(app_state *state, renderer_font font);
+
+APIFUNC renderer_texture render_font_get_texture(app_state *state, renderer_font font);

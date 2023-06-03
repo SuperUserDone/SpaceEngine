@@ -84,12 +84,12 @@ static inline value_type *lru_cache_find(lru_cache<key_type, value_type> &cache,
 template <typename key_type, typename value_type>
 static inline void lru_cache_invalidate(lru_cache<key_type, value_type> &cache) {
   while (cache.data_index_begin != cache.data_index) {
-    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
-
     lru_element<key_type, value_type> *data = &cache.data[cache.data_index_begin];
-    hash_table_delete(cache.index, data->key);
     key_delete(data->key);
+    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
   }
+
+  hash_table_clear(cache.index);
 
   cache.data_index = 0;
   cache.data_index_begin = 0;

@@ -17,6 +17,8 @@ struct game_state {
   renderer_font font;
   uint32_t font_size;
 
+  char *text;
+
   struct {
     renderer_framebuffer bloom_buffers[MAX_BLOOM_ITERATIONS];
     renderer_texture bloom_buffer_textures[MAX_BLOOM_ITERATIONS];

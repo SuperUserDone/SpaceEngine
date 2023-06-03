@@ -3,6 +3,7 @@
 #include "renderer/renderer.hh"
 #include "renderer/text/render_text.hh"
 #include <imgui.h>
+#include <string.h>
 
 void load_assets(app_state *state) {
   asset_loader_load_file_sync(state, "data/engine.sdef").get_no_err();
@@ -26,6 +27,9 @@ void init(app_state *state) {
   font_data fd = {"data/fonts/Roboto-Regular.ttf"};
   state->game.font = render_font_create(state, &fd);
   state->game.font_size = 32;
+  state->game.text = new char[256];
+
+  strcpy_s(state->game.text, 256, "Hello World");
 
   render_init(state);
 }
@@ -33,7 +37,7 @@ void init(app_state *state) {
 void render(app_state *state) {
   render_game(state);
   render_font_reset(state, state->game.font);
-  render_text(state, state->game.font, state->game.font_size, {100, 100}, "Hello World");
+  render_text(state, state->game.font, state->game.font_size, {100, 100}, state->game.text);
   render_font_finish(state, state->game.font);
 }
 
@@ -61,9 +65,14 @@ void draw_debug_info(app_state *state) {
                     0.f,
                     10.f);
   ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.001f, 0.f, 1.f);
+
+  ImGui::InputText("Text", state->game.text, 256);
+
   int font_size = state->game.font_size;
   ImGui::DragInt("Font size", &font_size);
   state->game.font_size = font_size;
+
+  ImGui::Image((void*)(size_t)render_font_get_texture(state, state->game.font).index, {256, 256});
 
   ImGui::End();
 }

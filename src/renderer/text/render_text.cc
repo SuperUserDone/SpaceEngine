@@ -22,6 +22,7 @@
 #include <harfbuzz/hb-ft.h>
 #include <harfbuzz/hb.h>
 #include <stdint.h>
+#include <vcruntime_string.h>
 
 #define PADDING 1
 
@@ -155,7 +156,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   i_font->locations =
       lru_cache_create(state->permanent_arena, 1024, create_glyph, delete_glyph, i_font);
   i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
-  i_font->sizes = arena_typed_create<internal_size_info>(128);
+  i_font->sizes = arena_typed_create<internal_size_info>(1024);
 
   size_t texture_size = std::min(state->api.renderer.get_max_texture_size(), 1024ull);
   i_font->glyph_data.data = calloc(sizeof(uint8_t), texture_size * texture_size);
@@ -178,6 +179,11 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   renderer_font font;
   font.index = (size_t)i_font;
   return font;
+}
+
+APIFUNC renderer_texture render_font_get_texture(app_state *state, renderer_font font) {
+  internal_font *i_font = (internal_font *)font.index;
+  return i_font->glyph_texture;
 }
 
 void render_text_init(app_state *state) {
@@ -221,7 +227,7 @@ void render_text(app_state *state,
     i_size->hb_font = hb_ft_font_create(i_font->ft_face, nullptr);
     i_size->hb_buffer = hb_buffer_create();
 
-    i_size->line_height = i_font->ft_face->height;
+    i_size->line_height = i_size->size->metrics.ascender;
   }
 
   glm::vec2 current_pos = pos * dpi;
@@ -260,7 +266,7 @@ void render_text(app_state *state,
       }
 
       glm::vec2 rect_pos = current_pos +
-                           (glm::vec2((float)pos[i].x_offset, -pos[i].y_offset) / 64.f) +
+                           (glm::vec2((float)pos[i].x_offset, i_size->line_height-pos[i].y_offset) / 64.f) +
                            glyph.bearing;
       glm::vec2 rect_size = glyph.isize;
 
@@ -277,6 +283,9 @@ void render_font_reset(app_state *state, renderer_font font) {
     lru_cache_invalidate(i_font->locations);
     i_font->glyph_data_offset = {PADDING, PADDING};
     i_font->row_height = 0;
+    i_font->invalidate = false;
+
+    memset(i_font->glyph_data.data, 0x00, i_font->glyph_data.w * i_font->glyph_data.h);
   }
 }
 

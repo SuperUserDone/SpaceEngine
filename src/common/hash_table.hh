@@ -16,7 +16,6 @@
 #include "common/hash_table.hh"
 #include "memory/memory_arena.hh"
 #include "win32_export.hh"
-#include <corecrt_malloc.h>
 #include <string.h>
 
 template <typename key_type, typename val_type>
@@ -169,9 +168,23 @@ static inline void hash_table_delete(hash_table<key_type, val_type> &t, key_type
     if (t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0) {
       t.e[pl] = t.e[loc];
       t.e[pl].cost--;
+      pl = loc;
     } else {
       t.e[pl] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
+      t.nentries--;
       break;
     }
   }
+}
+
+template <typename key_type, typename val_type>
+static inline void hash_table_clear(hash_table<key_type, val_type> &t) {
+  for (size_t i = 0; i < t.size; i++) {
+    if (t.e[i].val != nullptr) {
+      key_delete(t.e[i].key);
+      t.e[i] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
+    }
+  }
+
+  t.nentries = 0;
 }
