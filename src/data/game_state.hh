@@ -14,6 +14,8 @@ struct game_state {
   } camera;
 
   solar_system *solar_system;
+  renderer_font font;
+  uint32_t font_size;
 
   struct {
     renderer_framebuffer bloom_buffers[MAX_BLOOM_ITERATIONS];

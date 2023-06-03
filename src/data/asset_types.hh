@@ -84,3 +84,11 @@ struct framebuffer_data {
 struct renderer_framebuffer {
   uint32_t index;
 };
+
+struct renderer_font {
+  size_t index;
+};
+
+struct font_data {
+  const char *file_name;
+};

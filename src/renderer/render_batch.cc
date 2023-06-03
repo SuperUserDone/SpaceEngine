@@ -1,13 +1,14 @@
 #include "render_batch.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
+#include "memory/memory_arena_typed.hh"
 #include "renderer/render_batch.hh"
 
-render_batch render_batch_create(app_state *state) {
+render_batch render_batch_create(app_state *state, size_t max_batch_size) {
   render_batch b;
 
-  b.verticies_arena = arena_typed_create<vertex>(65536 * 4);
-  b.indicies_arena = arena_typed_create<uint32_t>(65536 * 6);
+  b.verticies_arena = arena_typed_create<vertex>(max_batch_size * 4);
+  b.indicies_arena = arena_typed_create<uint32_t>(max_batch_size * 6);
 
   b.data.verticies = (vertex *)b.verticies_arena.arena.base;
   b.data.indicies = (uint32_t *)b.indicies_arena.arena.base;
@@ -22,9 +23,17 @@ render_batch render_batch_create(app_state *state) {
 void render_batch_reset(render_batch &batch) {
   batch.data.index_count = 0;
   batch.data.vertex_count = 0;
+
+  arena_typed_clear(batch.indicies_arena);
+  arena_typed_clear(batch.verticies_arena);
 }
 
 void render_batch_add_rect(render_batch &batch, rect &r) {
+  // Don't draw if size == 0
+  if (r.size == glm::vec2(0)) {
+    return;
+  }
+
   *arena_typed_push(batch.verticies_arena) = vertex{r.pos, r.uva};
   *arena_typed_push(batch.verticies_arena) =
       vertex{glm::vec2(r.pos.x, r.pos.y + r.size.y), glm::vec2(r.uva.x, r.uvb.y)};

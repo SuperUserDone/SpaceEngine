@@ -15,7 +15,7 @@ struct render_batch {
   mem_arena_typed<uint32_t> indicies_arena;
 };
 
-APIFUNC render_batch render_batch_create(app_state *state);
+APIFUNC render_batch render_batch_create(app_state *state, size_t max_batch_size = 2048);
 APIFUNC void render_batch_reset(render_batch &batch);
 APIFUNC void render_batch_add_rect(render_batch &batch, rect &r);
 APIFUNC void render_batch_render(app_state *state,

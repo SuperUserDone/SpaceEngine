@@ -1,4 +1,5 @@
 #include "assetmanager/loader.hh"
+#include "data/asset_types.hh"
 #include "renderer/renderer.hh"
 #include "renderer/text/render_text.hh"
 #include <imgui.h>
@@ -22,12 +23,18 @@ void init(app_state *state) {
 
   state->game.renderer.clear_color = glm::vec3(0.05, 0.053, 0.06);
 
+  font_data fd = {"data/fonts/Roboto-Regular.ttf"};
+  state->game.font = render_font_create(state, &fd);
+  state->game.font_size = 32;
+
   render_init(state);
 }
 
 void render(app_state *state) {
   render_game(state);
-  render_text_queue(state, 100, 100, u8"Some text");
+  render_font_reset(state, state->game.font);
+  render_text(state, state->game.font, state->game.font_size, {100, 100}, "Hello World");
+  render_font_finish(state, state->game.font);
 }
 
 void tick(app_state *state) {
@@ -39,6 +46,7 @@ void shutdown(app_state *state) {
 }
 
 void draw_debug_info(app_state *state) {
+
   ImGui::Begin("DebugSettings");
 
   ImGui::DragFloat("Zoom", &state->game.camera.zoom, 0.1f, 0.01f, 100.f);
@@ -53,6 +61,9 @@ void draw_debug_info(app_state *state) {
                     0.f,
                     10.f);
   ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.001f, 0.f, 1.f);
+  int font_size = state->game.font_size;
+  ImGui::DragInt("Font size", &font_size);
+  state->game.font_size = font_size;
 
   ImGui::End();
 }

@@ -1,22 +1,26 @@
 #include "render_text.hh"
 #include "assetmanager/assetmanager.hh"
+#include "common/debug.hh"
+#include "common/hash_table.hh"
 #include "common/lru_cache.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
 #include "memory/memory_arena.hh"
 #include "memory/memory_arena_typed.hh"
+#include "memory/memory_pool.hh"
 #include "renderer/render_batch.hh"
 #include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
 
 #include <freetype/freetype.h>
+#include <freetype/ftsizes.h>
+#include <freetype/fttypes.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
 #include <harfbuzz/hb-ft.h>
 #include <harfbuzz/hb.h>
-#include <limits>
 #include <stdint.h>
 
 #define PADDING 1
@@ -28,232 +32,260 @@ struct render_text_location {
   glm::ivec2 isize;
 };
 
-struct internal_info {
-  FT_Library ft_lib;
-  FT_Face ft_face;
+struct internal_size_info {
+  FT_Size size;
+  size_t line_height;
 
   hb_font_t *hb_font;
   hb_buffer_t *hb_buffer;
 };
 
-struct render_text_state {
-  render_batch batch;
-  bool tex_dirty;
+struct internal_font {
+  FT_Face ft_face;
 
+  render_batch batch;
   texture_data glyph_data;
   glm::uvec2 glyph_data_offset;
   size_t row_height;
   renderer_texture glyph_texture;
 
+  bool tex_dirty;
+  bool invalidate;
+
+  mem_arena_typed<internal_size_info> sizes;
+  hash_table<uint32_t, internal_size_info> size_lookup;
   lru_cache<size_t, render_text_location> locations;
+};
 
-  internal_info info;
+struct render_text_state {
+  FT_Library ft_lib;
 
-  size_t line_height;
+  mem_pool<internal_font> fonts;
 };
 
 render_text_location create_glyph(size_t key, void *userdata) {
   ZoneScopedN("Create Text Glyph");
   const int padding = PADDING;
-  app_state *state = (app_state *)userdata;
-  internal_info &info = state->render_text_state->info;
+  internal_font *state = (internal_font *)userdata;
 
-  render_text_state *rs = state->render_text_state;
+  uint32_t font_size = key >> 32;
+  uint32_t codepoint = key & 0xffffffff;
+
+  internal_size_info *size_info = hash_table_search(state->size_lookup, font_size);
+
+  FT_Activate_Size(size_info->size);
 
   render_text_location location;
 
   FT_Int32 flags = FT_LOAD_DEFAULT;
 
-  FT_Load_Glyph(info.ft_face, key, flags);
+  FT_Load_Glyph(state->ft_face, codepoint, flags);
 
-  FT_GlyphSlot slot = info.ft_face->glyph;
+  FT_GlyphSlot slot = state->ft_face->glyph;
   FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
 
   FT_Bitmap ftBitmap = slot->bitmap;
 
   glm::ivec2 size{ftBitmap.width, ftBitmap.rows};
 
-  if (rs->glyph_data_offset.x + size.x > rs->glyph_data.w) {
-    rs->glyph_data_offset.x = padding;
-    rs->glyph_data_offset.y += rs->row_height;
-    rs->row_height = padding;
+  if (state->glyph_data_offset.x + size.x > state->glyph_data.w) {
+    state->glyph_data_offset.x = padding;
+    state->glyph_data_offset.y += state->row_height;
+    state->row_height = padding;
   }
 
-  for (int i = 0; i < size.y; i++) {
-    size_t x_offset = rs->glyph_data_offset.x;
-    size_t y_offset = rs->glyph_data_offset.y;
-    size_t w = rs->glyph_data.w;
-    memcpy((uint8_t *)rs->glyph_data.data + x_offset + ((i + y_offset) * w),
-           (uint8_t *)ftBitmap.buffer + i * size.x,
-           size.x);
+  if (size.y + state->glyph_data_offset.y >= state->glyph_data.h) {
+    state->invalidate = true;
+  } else {
+    for (int i = 0; i < size.y; i++) {
+      size_t x_offset = state->glyph_data_offset.x;
+      size_t y_offset = state->glyph_data_offset.y;
+      size_t w = state->glyph_data.w;
+      memcpy((uint8_t *)state->glyph_data.data + x_offset + ((i + y_offset) * w),
+             (uint8_t *)ftBitmap.buffer + i * size.x,
+             size.x);
+    }
   }
 
-  location.uva = glm::vec2(rs->glyph_data_offset) / (float)rs->glyph_data.h;
-  location.uvb = location.uva + (glm::vec2(size) / (float)rs->glyph_data.h);
+  location.uva = glm::vec2(state->glyph_data_offset) / (float)state->glyph_data.h;
+  location.uvb = location.uva + (glm::vec2(size) / (float)state->glyph_data.h);
   location.isize = size;
   location.bearing = glm::vec2(slot->bitmap_left, -slot->bitmap_top);
 
-  rs->glyph_data_offset.x += size.x + padding;
-  rs->row_height = std::max(rs->row_height, (size_t)size.y + padding);
+  state->glyph_data_offset.x += size.x + padding;
+  state->row_height = std::max(state->row_height, (size_t)size.y + padding);
 
-  state->render_text_state->tex_dirty = true;
+  state->tex_dirty = true;
   return location;
 }
 
-void update_gpu_texture(app_state *state) {
-  if (state->render_text_state->tex_dirty) {
-    state->api.renderer.update_texture(&state->render_text_state->glyph_texture,
-                                       &state->render_text_state->glyph_data);
-    state->render_text_state->tex_dirty = false;
+void update_gpu_texture(app_state *state, internal_font *font) {
+  if (font->tex_dirty) {
+    state->api.renderer.update_texture(&font->glyph_texture, &font->glyph_data);
+    font->tex_dirty = false;
   }
 }
 
 void delete_glyph(render_text_location value, void *userdata) {
-  app_state *state = (app_state *)userdata;
+  // app_state *state = (app_state *)userdata;
+  // TODO
 }
 
 void init_ft(app_state *state) {
-  internal_info &info = state->render_text_state->info;
+  render_text_state *info = state->render_text_state;
 
   FT_Error ft_error;
 
-  if ((ft_error = FT_Init_FreeType(&info.ft_lib)))
-    abort();
-  if ((ft_error = FT_New_Face(info.ft_lib, "data/fonts/Roboto-Regular.ttf", 0, &info.ft_face)))
-    abort();
-  if ((ft_error = FT_Set_Pixel_Sizes(info.ft_face, 0, 128)))
-    abort();
-
-  state->render_text_state->line_height = info.ft_face->height;
-}
-
-void init_hb(app_state *state) {
-  internal_info &info = state->render_text_state->info;
-  info.hb_font = hb_ft_font_create(info.ft_face, nullptr);
-  info.hb_buffer = hb_buffer_create();
+  SPACE_ASSERT(!(ft_error = FT_Init_FreeType(&info->ft_lib)), "Could not init freetype!");
 }
 
 void quit_ft(app_state *state) {
-  internal_info &info = state->render_text_state->info;
-  FT_Done_Face(info.ft_face);
-  FT_Done_FreeType(info.ft_lib);
+  render_text_state *info = state->render_text_state;
+  FT_Done_FreeType(info->ft_lib);
 }
-void quit_hb(app_state *state) {
-  internal_info &info = state->render_text_state->info;
-  hb_font_destroy(info.hb_font);
-  hb_buffer_destroy(info.hb_buffer);
+
+APIFUNC extern renderer_font render_font_create(app_state *state, font_data *data) {
+  render_text_state *info = state->render_text_state;
+  internal_font *i_font = pool_alloc(state->render_text_state->fonts);
+  i_font->invalidate = false;
+
+  SPACE_ASSERT(!FT_New_Face(info->ft_lib, data->file_name, 0, &i_font->ft_face),
+               "Could not load face %s",
+               data->file_name);
+  i_font->locations =
+      lru_cache_create(state->permanent_arena, 1024, create_glyph, delete_glyph, i_font);
+  i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
+  i_font->sizes = arena_typed_create<internal_size_info>(128);
+
+  size_t texture_size = std::min(state->api.renderer.get_max_texture_size(), 1024ull);
+  i_font->glyph_data.data = calloc(sizeof(uint8_t), texture_size * texture_size);
+  i_font->glyph_data.h = texture_size;
+  i_font->glyph_data.w = texture_size;
+  i_font->glyph_data.format = TEX_FORMAT_R;
+  i_font->glyph_data.downscale = TEX_FILTER_LINEAR;
+  i_font->glyph_data.upscale = TEX_FILTER_LINEAR;
+  i_font->glyph_data.edge = TEX_EDGE_CLAMP;
+
+  i_font->glyph_texture = state->api.renderer.create_texture(&i_font->glyph_data);
+
+  i_font->glyph_data_offset = {PADDING, PADDING};
+  i_font->row_height = 0;
+
+  i_font->tex_dirty = false;
+
+  i_font->batch = render_batch_create(state);
+
+  renderer_font font;
+  font.index = (size_t)i_font;
+  return font;
 }
 
 void render_text_init(app_state *state) {
   state->render_text_state = arena_push_struct(state->permanent_arena, render_text_state);
-
-  state->render_text_state->locations =
-      lru_cache_create(state->permanent_arena, 65536, create_glyph, delete_glyph, state);
-
-  size_t texture_size = std::min(state->api.renderer.get_max_texture_size(), 4096ull);
-  state->render_text_state->glyph_data.data =
-      arena_push_zero(state->permanent_arena, texture_size * texture_size);
-  state->render_text_state->glyph_data.h = texture_size;
-  state->render_text_state->glyph_data.w = texture_size;
-  state->render_text_state->glyph_data.format = TEX_FORMAT_R;
-  state->render_text_state->glyph_data.downscale = TEX_FILTER_LINEAR;
-  state->render_text_state->glyph_data.upscale = TEX_FILTER_LINEAR;
-  state->render_text_state->glyph_data.edge = TEX_EDGE_CLAMP;
-
-  state->render_text_state->glyph_texture =
-      state->api.renderer.create_texture(&state->render_text_state->glyph_data);
-
-  state->render_text_state->glyph_data_offset = {PADDING, PADDING};
-  state->render_text_state->row_height = 0;
-
-  state->render_text_state->tex_dirty = false;
-
-  state->render_text_state->batch = render_batch_create(state);
+  state->render_text_state->fonts = pool_create<internal_font>(64);
 
   init_ft(state);
-  init_hb(state);
 }
 
 void render_text_quit(app_state *state) {
-  quit_hb(state);
   quit_ft(state);
+  // TODO Make better
 }
 
-void render_text_newframe(app_state *state) {
-  render_batch_reset(state->render_text_state->batch);
-}
-
-void queue_rect(render_text_state *state,
-                glm::vec2 pos,
-                glm::vec2 size,
-                glm::vec2 uva,
-                glm::vec2 uvb) {
-
+void queue_rect(render_batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
   rect r = {pos, size, uva, uvb};
-  // Don't draw if size == 0
-  if (size == glm::vec2(0)) {
-    return;
-  }
-
-  render_batch_add_rect(state->batch, r);
+  render_batch_add_rect(batch, r);
 }
 
-void render_text_queue(app_state *state, int x, int y, const char *text) {
+void render_text(app_state *state,
+                 renderer_font font,
+                 uint32_t size,
+                 glm::vec2 pos,
+                 const char *text) {
   ZoneScopedN("Queue Draw Text");
 
-  internal_info &info = state->render_text_state->info;
-  glm::vec2 current_pos = {x, y};
+  float dpi = state->window_area.dpi_scaling;
+
+  uint32_t scaled_size = size * dpi;
+
+  internal_font *i_font = (internal_font *)font.index;
+  internal_size_info *i_size = hash_table_search(i_font->size_lookup, (uint32_t)scaled_size);
+
+  if (!i_size) {
+    i_size = arena_typed_push(i_font->sizes);
+    hash_table_insert(i_font->size_lookup, scaled_size, i_size);
+
+    FT_New_Size(i_font->ft_face, &i_size->size);
+    FT_Activate_Size(i_size->size);
+    FT_Set_Pixel_Sizes(i_font->ft_face, 0, scaled_size);
+    i_size->hb_font = hb_ft_font_create(i_font->ft_face, nullptr);
+    i_size->hb_buffer = hb_buffer_create();
+
+    i_size->line_height = i_font->ft_face->height;
+  }
+
+  glm::vec2 current_pos = pos * dpi;
+  FT_Activate_Size(i_size->size);
 
   {
     ZoneScopedN("Reset Buffer");
-    hb_buffer_reset(info.hb_buffer);
+    hb_buffer_reset(i_size->hb_buffer);
   }
 
   {
     ZoneScopedN("Add UTF8 Text to buffer");
-    hb_buffer_add_utf8(info.hb_buffer, text, -1, 0, -1);
-    hb_buffer_guess_segment_properties(info.hb_buffer);
+    hb_buffer_add_utf8(i_size->hb_buffer, text, -1, 0, -1);
+    hb_buffer_guess_segment_properties(i_size->hb_buffer);
   }
 
   {
     ZoneScopedN("Shape");
-    hb_shape(info.hb_font, info.hb_buffer, NULL, 0);
+    hb_shape(i_size->hb_font, i_size->hb_buffer, NULL, 0);
   }
 
   {
     ZoneScopedN("Process Glyphs");
-    uint32_t len = hb_buffer_get_length(info.hb_buffer);
-    hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(info.hb_buffer, NULL);
-    hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(info.hb_buffer, NULL);
+    uint32_t len = hb_buffer_get_length(i_size->hb_buffer);
+    hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(i_size->hb_buffer, NULL);
+    hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(i_size->hb_buffer, NULL);
 
     for (size_t i = 0; i < len; i++) {
-      size_t cp = buffer_info[i].codepoint;
+      uint32_t cp = buffer_info[i].codepoint;
       render_text_location glyph;
 
       {
         ZoneScopedN("Lookup Glyph");
-        glyph = *lru_cache_find(state->render_text_state->locations, cp);
+        uint64_t key = cp | ((uint64_t)scaled_size << 32);
+        glyph = *lru_cache_find(i_font->locations, key);
       }
 
-      glm::vec2 rect_pos =
-          current_pos +
-          (glm::vec2((float)pos[i].x_offset,
-                     (float)state->render_text_state->line_height - pos[i].y_offset) /
-           64.f) +
-          glyph.bearing;
+      glm::vec2 rect_pos = current_pos +
+                           (glm::vec2((float)pos[i].x_offset, -pos[i].y_offset) / 64.f) +
+                           glyph.bearing;
       glm::vec2 rect_size = glyph.isize;
 
-      queue_rect(state->render_text_state, rect_pos, rect_size, glyph.uva, glyph.uvb);
+      queue_rect(i_font->batch, rect_pos / dpi, rect_size / dpi, glyph.uva, glyph.uvb);
       current_pos += glm::vec2(pos[i].x_advance, -pos[i].y_advance) / 64.f;
     }
   }
 }
 
-void render_text_finishframe(app_state *state) {
-  update_gpu_texture(state);
+void render_font_reset(app_state *state, renderer_font font) {
+  internal_font *i_font = (internal_font *)font.index;
+  render_batch_reset(i_font->batch);
+  if (i_font->invalidate) {
+    lru_cache_invalidate(i_font->locations);
+    i_font->glyph_data_offset = {PADDING, PADDING};
+    i_font->row_height = 0;
+  }
+}
+
+void render_font_finish(app_state *state, renderer_font font) {
+  internal_font *i_font = (internal_font *)font.index;
+  update_gpu_texture(state, i_font);
 
   glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
-  // area /= state->window_area.dpi_scaling;
+  area /= state->window_area.dpi_scaling;
 
   glm::mat4 mvp = glm::ortho(0.f, area.x, area.y, 0.f, -1.f, 1.f);
 
@@ -261,7 +293,7 @@ void render_text_finishframe(app_state *state) {
 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);
-  pipeline_settings_set_uniform(settings, 1, state->render_text_state->glyph_texture);
+  pipeline_settings_set_uniform(settings, 1, i_font->glyph_texture);
 
-  render_batch_render(state, state->render_text_state->batch, p, settings);
+  render_batch_render(state, i_font->batch, p, settings);
 }

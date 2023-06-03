@@ -5,6 +5,7 @@
 
 #include "common/hash_table.hh"
 #include "memory/memory_arena.hh"
+#include <float.h>
 
 template <typename key_type, typename value_type>
 struct lru_element {
@@ -31,15 +32,17 @@ template <typename key_type, typename value_type>
 static inline lru_cache<key_type, value_type> lru_cache_create(
     mem_arena &arena,
     size_t size,
-    value_type (*create_fun)(key_type key,
-                             void *userdata),
+    value_type (*create_fun)(key_type key, void *userdata),
     void (*delete_fun)(value_type value, void *userdata),
     void *userdata) {
   lru_cache<key_type, value_type> cache;
 
   // Create the table with 50% more elements than required for better collision behavior
-  cache.index = hash_table_create<key_type, lru_element<key_type, value_type>>(arena, (size * 3) / 2);
-  cache.data = (lru_element<key_type, value_type> *)arena_push(arena, sizeof(lru_element<key_type, value_type>) * size);
+  cache.index =
+      hash_table_create<key_type, lru_element<key_type, value_type>>(arena, (size * 3) / 2);
+  cache.data = (lru_element<key_type, value_type> *)arena_push(
+      arena,
+      sizeof(lru_element<key_type, value_type>) * size);
   cache.data_index = 0;
   cache.data_index_begin = 0;
   cache.data_size = size;
@@ -76,4 +79,18 @@ static inline value_type *lru_cache_find(lru_cache<key_type, value_type> &cache,
   }
 
   return &data->val;
+}
+
+template <typename key_type, typename value_type>
+static inline void lru_cache_invalidate(lru_cache<key_type, value_type> &cache) {
+  while (cache.data_index_begin != cache.data_index) {
+    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
+
+    lru_element<key_type, value_type> *data = &cache.data[cache.data_index_begin];
+    hash_table_delete(cache.index, data->key);
+    key_delete(data->key);
+  }
+
+  cache.data_index = 0;
+  cache.data_index_begin = 0;
 }

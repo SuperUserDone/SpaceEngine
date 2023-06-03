@@ -157,10 +157,6 @@ void run_game_loop(app_state *state) {
       TracyPlot("Time", state->time.t);
     }
 
-    { // Setup render text
-      render_text_newframe(state);
-    }
-
     // Run game update
     {
       ZoneScopedN("ProcessTicks");
@@ -192,12 +188,6 @@ void run_game_loop(app_state *state) {
 
         state->api.renderer.imgui_end();
       }
-    }
-
-    // Render text
-    {
-      ZoneScopedN("RenderText");
-      render_text_finishframe(state);
     }
 
     // Present screen
@@ -359,6 +349,7 @@ int main(int argc, char *argv[]) {
 
   run_game_loop(&state);
 
+  render_text_quit(&state);
   free_renderer(&state);
   SDL_Quit();
 

@@ -25,5 +25,6 @@ struct asset_storage {
   mem_pool<renderer_pipeline> pipeline_data;
   mem_pool<renderer_mesh> mesh_data;
   mem_pool<renderer_framebuffer> framebuffer_data;
+  mem_pool<renderer_font> font_data;
   mem_pool<asset_index> index_table;
 };
