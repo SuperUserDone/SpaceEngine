@@ -38,7 +38,7 @@ struct hash_table {
 
 template <typename T>
 static inline size_t hash_table_default_hash(T in) {
-  return (size_t)in;
+  return (size_t)XXH3_64bits(&in, sizeof(in));
 }
 
 template <>
@@ -108,9 +108,20 @@ static inline bool hash_table_insert(hash_table<key_type, val_type> &t,
 
   size_t hash = t.hash_fun(key);
 
+  if (hash == 0) {
+    printf("Err");
+  }
+
   size_t location = hash % t.size;
 
   hash_table_entry<key_type, val_type> entry = {key_copy(key), hash, value, 0};
+
+  int64_t loc = _hash_table_get_key_location(t, key);
+  if (loc >= 0) {
+    key_delete(t.e[loc].key);
+    t.e[loc] = entry;
+    return true;
+  }
 
   while (t.e[location].val != nullptr) {
     if (entry.cost > t.e[location].cost) {
@@ -161,14 +172,16 @@ static inline val_type *hash_table_search(hash_table<key_type, val_type> &t, key
 template <typename key_type, typename val_type>
 static inline void hash_table_delete(hash_table<key_type, val_type> &t, key_type key) {
   int64_t loc = _hash_table_get_key_location(t, key);
-  while (loc >= 0) {
-    key_delete(t.e[loc].key);
+  if (loc < 0)
+    return;
+
+  key_delete(t.e[loc].key);
+  while (true) {
     size_t pl = loc;
     loc = (loc + 1) % t.size;
-    if (t.e[loc].cost >= t.e[pl].cost && t.e[loc].cost > 0) {
+    if (t.e[loc].cost > 0) {
       t.e[pl] = t.e[loc];
       t.e[pl].cost--;
-      pl = loc;
     } else {
       t.e[pl] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
       t.nentries--;

@@ -28,14 +28,16 @@ void init(app_state *state) {
   state->game.font_size = 32;
   state->game.text = new char[256];
 
-  strcpy_s(state->game.text, 256, "Hello World");
+  strcpy_s(state->game.text,
+           256,
+           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_=+");
 
   render_init(state);
 }
 
 void render(app_state *state) {
   render_game(state);
-  renderer_font font = asset_font_get_render(state, "default");
+  renderer_font font = asset_font_get_render(state, "noto_sans_regular");
   render_font_reset(state, font);
   render_text(state, font, state->game.font_size, {100, 100}, state->game.text);
   render_font_finish(state, font);
@@ -69,12 +71,14 @@ void draw_debug_info(app_state *state) {
   ImGui::InputText("Text", state->game.text, 256);
 
   int font_size = state->game.font_size;
-  ImGui::DragInt("Font size", &font_size);
+  ImGui::SliderInt("Font size", &font_size, 1, 100);
   state->game.font_size = font_size;
-
+  render_font_info info = render_font_get_info(state, asset_font_get_render(state, "noto_sans_regular"));
   ImGui::Image(
-      (void *)(size_t)render_font_get_texture(state, asset_font_get_render(state, "default")).index,
+      (void *)(size_t)info.texture.index,
       {256, 256});
+
+  ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}", info.cache_entries, info.ht_entries, info.atlas_size.x, info.atlas_size.y);
 
   ImGui::End();
 }

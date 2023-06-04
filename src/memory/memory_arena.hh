@@ -119,12 +119,15 @@ static inline void *arena_push_zero(mem_arena &arena, size_t size) {
   return data;
 }
 
-static inline void arena_pop(mem_arena &arena, size_t size) {
+static inline void *arena_pop(mem_arena &arena, size_t size) {
   // Align the value
   size = ((size + arena.alignment - 1) / arena.alignment) * arena.alignment;
 
   // Mark the memory as availabe to be reused
   arena.size -= size;
+
+  void *base = (void *)((uint8_t *)arena.base + arena.size);
+  return base;
 }
 
 static inline void arena_pop_to(mem_arena &arena, void *address) {

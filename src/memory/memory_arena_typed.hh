@@ -34,8 +34,8 @@ static inline T *arena_typed_push(mem_arena_typed<T> &array) {
 }
 
 template <typename T>
-static inline void arena_typed_pop(mem_arena_typed<T> &array) {
-  arena_pop_struct(array.arena, T);
+static inline T *arena_typed_pop(mem_arena_typed<T> &array) {
+  return (T *)arena_pop_struct(array.arena, T);
 }
 
 template <typename T>
@@ -46,4 +46,9 @@ static inline void arena_typed_pop_to(mem_arena_typed<T> &array, void *addr) {
 template <typename T>
 static inline void arena_typed_clear(mem_arena_typed<T> &array) {
   arena_clear(array.arena);
+}
+
+template <typename T>
+static inline size_t arena_typed_get_size(mem_arena_typed<T> &array) {
+  return array.arena.size / sizeof(T);
 }

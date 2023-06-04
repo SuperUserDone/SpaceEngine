@@ -53,6 +53,7 @@ struct internal_font {
 
   bool tex_dirty;
   bool invalidate;
+  size_t invalidation_count;
 
   mem_arena_typed<internal_size_info> sizes;
   hash_table<uint32_t, internal_size_info> size_lookup;
@@ -150,6 +151,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   render_text_state *info = state->render_text_state;
   internal_font *i_font = pool_alloc(state->render_text_state->fonts);
   i_font->invalidate = false;
+  i_font->invalidation_count = 0;
 
   i_font->font_face_data = new uint8_t[data->file_len];
   memcpy(i_font->font_face_data, data->file_data, data->file_len);
@@ -160,12 +162,16 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
                                    0,
                                    &i_font->ft_face),
                "Could not load face!");
-  i_font->locations =
-      lru_cache_create(state->permanent_arena, 1024, create_glyph, delete_glyph, i_font);
+  i_font->locations = lru_cache_create(state->permanent_arena,
+                                       FONT_MAX_GLYPH_COUNT,
+                                       create_glyph,
+                                       delete_glyph,
+                                       i_font);
   i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
-  i_font->sizes = arena_typed_create<internal_size_info>(1024);
+  i_font->sizes = arena_typed_create<internal_size_info>(FONT_SIZE_MAX - FONT_SIZE_MIN + 1);
 
-  size_t texture_size = std::min(state->api.renderer.get_max_texture_size(), 1024ull);
+  size_t texture_size =
+      std::min(state->api.renderer.get_max_texture_size(), (size_t)FONT_MIN_GLYPH_ATLAS_SIZE);
   i_font->glyph_data.data = calloc(sizeof(uint8_t), texture_size * texture_size);
   i_font->glyph_data.h = texture_size;
   i_font->glyph_data.w = texture_size;
@@ -188,9 +194,16 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   return font;
 }
 
-APIFUNC renderer_texture render_font_get_texture(app_state *state, renderer_font font) {
+APIFUNC render_font_info render_font_get_info(app_state *state, renderer_font font) {
   internal_font *i_font = (internal_font *)font.index;
-  return i_font->glyph_texture;
+  render_font_info info;
+
+  info.atlas_size = {i_font->glyph_data.w, i_font->glyph_data.h};
+  info.ht_entries = i_font->locations.index.nentries;
+  info.texture = i_font->glyph_texture;
+  info.cache_entries = i_font->locations.nentries;
+
+  return info;
 }
 
 void render_text_init(app_state *state) {
@@ -216,6 +229,11 @@ void render_text(app_state *state,
                  glm::vec2 pos,
                  const char *text) {
   ZoneScopedN("Queue Draw Text");
+
+  SPACE_ASSERT(size >= FONT_SIZE_MIN && size <= FONT_SIZE_MAX,
+               "Font size must be between %d and %d!",
+               FONT_SIZE_MIN,
+               FONT_SIZE_MAX);
 
   float dpi = state->window_area.dpi_scaling;
 
@@ -291,6 +309,22 @@ void render_font_reset(app_state *state, renderer_font font) {
     i_font->glyph_data_offset = {PADDING, PADDING};
     i_font->row_height = 0;
     i_font->invalidate = false;
+    i_font->invalidation_count++;
+
+    if (i_font->invalidation_count >= FONT_ATLAS_RESIZE_THRES) {
+      free(i_font->glyph_data.data);
+
+      size_t texture_size = std::min(
+          std::min(state->api.renderer.get_max_texture_size(), (size_t)FONT_MAX_GLYPH_ATLAS_SIZE),
+          (size_t)i_font->glyph_data.w * 2);
+      i_font->glyph_data.data = calloc(sizeof(uint8_t), texture_size * texture_size);
+
+      i_font->glyph_data.h = texture_size;
+      i_font->glyph_data.w = texture_size;
+
+      i_font->invalidation_count = 0;
+      return;
+    }
 
     memset(i_font->glyph_data.data, 0x00, i_font->glyph_data.w * i_font->glyph_data.h);
   }
@@ -315,5 +349,14 @@ void render_font_finish(app_state *state, renderer_font font) {
 }
 
 void render_font_delete(app_state *state, renderer_font font) {
-  // TODO
+  internal_font *i_font = (internal_font *)font.index;
+
+  for (size_t i = 0; i < arena_typed_get_size(i_font->sizes); i++) {
+    internal_size_info *sz = arena_typed_pop(i_font->sizes);
+    hb_buffer_destroy(sz->hb_buffer);
+    hb_font_destroy(sz->hb_font);
+    FT_Done_Size(sz->size);
+  }
+
+  FT_Done_Face(i_font->ft_face);
 }

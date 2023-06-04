@@ -26,6 +26,7 @@ struct lru_cache {
   size_t data_index;
   size_t data_index_begin;
   size_t data_size;
+  size_t nentries;
 };
 
 template <typename key_type, typename value_type>
@@ -45,6 +46,7 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
       sizeof(lru_element<key_type, value_type>) * size);
   cache.data_index = 0;
   cache.data_index_begin = 0;
+  cache.nentries = 0;
   cache.data_size = size;
   cache.create_fun = create_fun;
   cache.delete_fun = delete_fun;
@@ -55,12 +57,14 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
 
 template <typename key_type, typename value_type>
 static inline void lru_evict_if_full(lru_cache<key_type, value_type> &cache) {
-  if ((cache.data_index + 1) % cache.data_size == cache.data_index_begin) {
+  if (cache.nentries + 1 == cache.data_size) {
     hash_table_delete(cache.index, cache.data[cache.data_index_begin].key);
     key_delete(cache.data[cache.data_index_begin].key);
     cache.delete_fun(cache.data[cache.data_index_begin].val, cache.userdata);
 
     cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
+    cache.nentries--;
+
   }
 }
 
@@ -69,13 +73,14 @@ static inline value_type *lru_cache_find(lru_cache<key_type, value_type> &cache,
   lru_element<key_type, value_type> *data = hash_table_search(cache.index, key);
   if (!data) {
     lru_evict_if_full(cache);
-    cache.data_index = (cache.data_index + 1) % cache.data_size;
-
     data = &cache.data[cache.data_index];
+
+    cache.data_index = (cache.data_index + 1) % cache.data_size;
     data->key = key_copy(key);
     data->val = cache.create_fun(data->key, cache.userdata);
 
     hash_table_insert(cache.index, key, data);
+    cache.nentries++;
   }
 
   return &data->val;
@@ -93,4 +98,5 @@ static inline void lru_cache_invalidate(lru_cache<key_type, value_type> &cache) 
 
   cache.data_index = 0;
   cache.data_index_begin = 0;
+  cache.nentries = 0;
 }

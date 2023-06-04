@@ -20,3 +20,6 @@
 
 [font] default 
   path "data/fonts/Roboto-Regular.ttf"
+
+[font] noto_sans_regular 
+  path "data/fonts/NotoSans-Regular.ttf"
