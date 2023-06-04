@@ -16,6 +16,7 @@
 #include "common/hash_table.hh"
 #include "memory/memory_arena.hh"
 #include "win32_export.hh"
+#include <iterator>
 #include <string.h>
 
 template <typename key_type, typename val_type>
@@ -34,6 +35,62 @@ struct hash_table {
   size_t (*hash_fun)(key_type type);
   bool (*comp_fun)(key_type l, key_type r);
   size_t size;
+
+  struct iterator {
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = hash_table_entry<key_type, val_type>;
+    using pointer = value_type*;     // or also value_type*
+    using reference = value_type &; // or also value_type&
+
+    iterator(pointer data)
+        : m_ptr(data){
+
+          };
+
+    reference operator*() const {
+      return *m_ptr;
+    }
+    pointer operator->() {
+      return m_ptr;
+    }
+
+    iterator &operator++() {
+      do {
+        m_ptr++;
+      } while (m_ptr->val == nullptr);
+
+      return *this;
+    }
+
+    iterator operator++(int) {
+      iterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.m_ptr == b.m_ptr;
+    };
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return a.m_ptr != b.m_ptr;
+    };
+
+  private:
+    pointer m_ptr;
+  };
+
+  iterator begin() {
+    auto *entry = e;
+    while (entry->val == nullptr && &e[size] != entry) {
+      entry++;
+    }
+    return iterator(entry);
+  }
+
+  iterator end() {
+    return iterator(&e[size]);
+  }
 };
 
 template <typename T>

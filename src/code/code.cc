@@ -61,24 +61,36 @@ void draw_debug_info(app_state *state) {
   ImGui::ColorEdit3("SunColor", (float *)&state->game.solar_system->star.color);
   ImGui::ColorEdit3("ClearColor", (float *)&state->game.renderer.clear_color);
 
-  ImGui::DragFloat4("Bloom Threshold",
-                    (float *)&state->game.renderer.bloom_params,
-                    0.01,
-                    0.f,
-                    10.f);
-  ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.001f, 0.f, 1.f);
+  if (ImGui::CollapsingHeader("Bloom")) {
+    ImGui::DragFloat4("Bloom Threshold",
+                      (float *)&state->game.renderer.bloom_params,
+                      0.01,
+                      0.f,
+                      10.f);
+    ImGui::DragFloat("Bloom Size", &state->game.renderer.bloom_size, 0.001f, 0.f, 1.f);
+  }
 
-  ImGui::InputText("Text", state->game.text, 256);
+  if (ImGui::CollapsingHeader("Text")) {
+    ImGui::InputText("Text", state->game.text, 256);
 
-  int font_size = state->game.font_size;
-  ImGui::SliderInt("Font size", &font_size, 1, 100);
-  state->game.font_size = font_size;
-  render_font_info info = render_font_get_info(state, asset_font_get_render(state, "noto_sans_regular"));
-  ImGui::Image(
-      (void *)(size_t)info.texture.index,
-      {256, 256});
+    int font_size = state->game.font_size;
+    ImGui::SliderInt("Font size", &font_size, 1, 100);
+    state->game.font_size = font_size;
+    render_font_info info =
+        render_font_get_info(state, asset_font_get_render(state, "noto_sans_regular"));
+    ImGui::Image((void *)(size_t)info.texture.index, {256, 256});
 
-  ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}", info.cache_entries, info.ht_entries, info.atlas_size.x, info.atlas_size.y);
+    ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}",
+                info.cache_entries,
+                info.ht_entries,
+                info.atlas_size.x,
+                info.atlas_size.y);
+  }
+  if (ImGui::CollapsingHeader("Assets")) {
+    for (auto &i : state->assets.asset_lookup) {
+      ImGui::Text("%s\n", i.key);
+    }
+  }
 
   ImGui::End();
 }
