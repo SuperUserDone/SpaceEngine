@@ -13,44 +13,37 @@
     renderer_##name t = state->api.renderer.create_##name(data);                                   \
     renderer_##name *k = state->assets.name##_data.alloc();                                        \
     *k = t;                                                                                        \
-    asset_index *i = state->assets.index_table.alloc();                                            \
-    *i = asset_index{ENUM_NAME, (void *)k};                                                        \
-    hash_table_insert(state->assets.asset_lookup, id, i);                                          \
+    state->assets.asset_lookup.insert(id, asset_index{ENUM_NAME, (void *)k});                      \
   }
 
 #define update_function(name, ENUM_NAME)                                                           \
   void asset_##name##_update(app_state *state, const char *id, name##_data *data) {                \
     ZoneScopedN("Update " #name);                                                                  \
-    asset_index *i = _asset_table_find(state, id);                                                 \
-    if (i && i->type == ENUM_NAME) {                                                               \
-      state->api.renderer.update_##name((renderer_##name *)i->value, data);                        \
+    auto i = state->assets.asset_lookup.find(id);                                                  \
+    if (i != state->assets.asset_lookup.end() && i->val.type == ENUM_NAME) {                       \
+      state->api.renderer.update_##name((renderer_##name *)i->val.value, data);                    \
     }                                                                                              \
   }
 
 #define delete_function(name, ENUM_NAME)                                                           \
   void asset_##name##_delete(app_state *state, const char *id) {                                   \
     ZoneScopedN("Delete " #name);                                                                  \
-    asset_index *i = _asset_table_find(state, id);                                                 \
-    if (i && i->type == ENUM_NAME) {                                                               \
-      state->api.renderer.delete_##name(*(renderer_##name *)i->value);                             \
-      state->assets.name##_data.free((renderer_##name *)i->value);                                 \
-      state->assets.index_table.free(i);                                                           \
-      hash_table_delete(state->assets.asset_lookup, id);                                           \
+    auto i = state->assets.asset_lookup.find(id);                                                  \
+    if (i != state->assets.asset_lookup.end() && i->val.type == ENUM_NAME) {                       \
+      state->api.renderer.delete_##name(*(renderer_##name *)i->val.value);                         \
+      state->assets.name##_data.free((renderer_##name *)i->val.value);                             \
+      state->assets.asset_lookup.erase(id);                                                        \
     }                                                                                              \
   }
 
 #define get_function(name, ENUM_NAME)                                                              \
   result<renderer_##name> asset_##name##_get_render(app_state *state, const char *id) {            \
     ZoneScopedN("Get " #name);                                                                     \
-    asset_index *i = _asset_table_find(state, id);                                                 \
-    if (i && i->type == ENUM_NAME)                                                                 \
-      return result_ok(*(renderer_##name *)i->value);                                              \
+    auto i = state->assets.asset_lookup.find(id);                                                  \
+    if (i != state->assets.asset_lookup.end() && i->val.type == ENUM_NAME)                         \
+      return result_ok(*(renderer_##name *)i->val.value);                                          \
     return result_err<renderer_##name>("Could not find " #name " %s", id);                         \
   }
-
-asset_index *_asset_table_find(app_state *state, const char *id) {
-  return (asset_index *)hash_table_search(state->assets.asset_lookup, id);
-}
 
 static void init_default_assets(app_state *state) {
   // Quad
@@ -80,8 +73,7 @@ void asset_system_init(app_state *state) {
   state->assets.framebuffer_data.lt_init(1024);
   state->assets.font_data.lt_init(32);
 
-  state->assets.asset_lookup = hash_table_create<const char *, asset_index>(state->permanent_arena);
-  state->assets.index_table.lt_init(1024);
+  state->assets.asset_lookup.lt_init(1024);
 
   init_default_assets(state);
 }
@@ -92,22 +84,21 @@ void asset_system_shutdown(app_state *state) {
   state->assets.framebuffer_data.lt_done();
   state->assets.pipeline_data.lt_done();
   state->assets.font_data.lt_done();
-  state->assets.index_table.lt_done();
+  state->assets.asset_lookup.lt_done();
 }
 
 create_function(texture, ASSET_TYPE_TEXTURE);
 create_function(pipeline, ASSET_TYPE_PIPELINE);
 create_function(mesh, ASSET_TYPE_MESH);
 create_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
+
 void asset_font_create(app_state *state, const char *id, font_data *data) {
   ZoneScopedN("Create Font");
   asset_font_delete(state, id);
   renderer_font t = render_font_create(state, data);
   renderer_font *k = state->assets.font_data.alloc();
   *k = t;
-  asset_index *i = state->assets.index_table.alloc();
-  *i = asset_index{ASSET_TYPE_FONT, (void *)k};
-  hash_table_insert(state->assets.asset_lookup, id, i);
+  state->assets.asset_lookup.insert(id, asset_index{ASSET_TYPE_FONT, (void *)k});
 };
 
 update_function(texture, ASSET_TYPE_TEXTURE);
@@ -120,13 +111,12 @@ delete_function(framebuffer, ASSET_TYPE_FRAMEBUFFER);
 
 void asset_font_delete(app_state *state, const char *id) {
   ZoneScopedN("Delete Font");
-  asset_index *i = _asset_table_find(state, id);
 
-  if (i && i->type == ASSET_TYPE_FONT) {
-    render_font_delete(state, *(renderer_font *)i->value);
-    state->assets.font_data.free((renderer_font *)i->value);
-    state->assets.index_table.free(i);
-    hash_table_delete(state->assets.asset_lookup, id);
+  auto i = state->assets.asset_lookup.find(id);
+  if (i != state->assets.asset_lookup.end() && i->val.type == ASSET_TYPE_FONT) {
+    render_font_delete(state, *(renderer_font *)i->val.value);
+    state->assets.font_data.free((renderer_font *)i->val.value);
+    state->assets.asset_lookup.erase(id);
   }
 };
 

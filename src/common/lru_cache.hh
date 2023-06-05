@@ -3,7 +3,7 @@
 // This is a simple LRU cache using a ring buffer and a hashmap. I made it single header to
 // hopefully allow more inlining
 
-#include "common/hash_table.hh"
+#include "pyrolib/container/hash_table.hh"
 #include "pyrolib/memory/arena.hh"
 
 template <typename key_type, typename value_type>
@@ -14,7 +14,7 @@ struct lru_element {
 
 template <typename key_type, typename value_type>
 struct lru_cache {
-  hash_table<key_type, lru_element<key_type, value_type>> index;
+  pyro::container::hash_table<key_type, lru_element<key_type, value_type> *> index;
 
   pyro::container::array<lru_element<key_type, value_type>> data;
 
@@ -37,8 +37,7 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
   lru_cache<key_type, value_type> cache;
 
   // Create the table with 50% more elements than required for better collision behavior
-  cache.index =
-      hash_table_create<key_type, lru_element<key_type, value_type>>(arena, (size * 3) / 2);
+  cache.index.lt_init((size * 3) / 2);
   cache.data.lt_init(arena, size);
   cache.data_index = 0;
   cache.data_index_begin = 0;
@@ -53,32 +52,32 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
 template <typename key_type, typename value_type>
 static inline void lru_evict_if_full(lru_cache<key_type, value_type> &cache) {
   if (cache.nentries + 1 == cache.data.size()) {
-    hash_table_delete(cache.index, cache.data[cache.data_index_begin].key);
+    cache.index.erase(cache.data[cache.data_index_begin].key);
     key_delete(cache.data[cache.data_index_begin].key);
     cache.delete_fun(cache.data[cache.data_index_begin].val, cache.userdata);
 
     cache.data_index_begin = (cache.data_index_begin + 1) % cache.data.size();
     cache.nentries--;
-
   }
 }
 
 template <typename key_type, typename value_type>
 static inline value_type *lru_cache_find(lru_cache<key_type, value_type> &cache, key_type key) {
-  lru_element<key_type, value_type> *data = hash_table_search(cache.index, key);
-  if (!data) {
+  auto iterator = cache.index.find(key);
+  if (iterator == cache.index.end()) {
     lru_evict_if_full(cache);
-    data = &cache.data[cache.data_index];
+    auto *data = &cache.data[cache.data_index];
 
     cache.data_index = (cache.data_index + 1) % cache.data.size();
     data->key = key_copy(key);
     data->val = cache.create_fun(data->key, cache.userdata);
 
-    hash_table_insert(cache.index, key, data);
+    cache.index.insert(key, data);
     cache.nentries++;
+    return &data->val;
   }
 
-  return &data->val;
+  return &iterator->val->val;
 }
 
 template <typename key_type, typename value_type>
@@ -89,7 +88,7 @@ static inline void lru_cache_invalidate(lru_cache<key_type, value_type> &cache) 
     cache.data_index_begin = (cache.data_index_begin + 1) % cache.data.size();
   }
 
-  hash_table_clear(cache.index);
+  cache.index.clear();
 
   cache.data_index = 0;
   cache.data_index_begin = 0;

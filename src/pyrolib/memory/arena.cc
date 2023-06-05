@@ -1,5 +1,8 @@
 #include "arena.hh"
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 namespace pyro {
 namespace memory {

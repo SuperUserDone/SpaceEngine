@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pyrolib/memory/arena.hh"
+#include "pyrolib/memory/heap.hh"
 #include <vcruntime_string.h>
 
 namespace pyro {
@@ -17,6 +18,17 @@ public:
   void lt_init(memory::arena &arena, size_t size) {
     m_base = static_cast<T *>(arena.push<memory::arena_push_flags::zero>(sizeof(T) * size));
     m_size = size;
+  }
+
+  void lt_init(memory::heap &heap, size_t size) {
+    m_base = static_cast<T *>(heap.alloc(sizeof(T) * size));
+    m_size = size;
+  }
+
+  void lt_done(memory::heap &heap)
+  {
+    heap.free(m_base);
+    m_base = nullptr;
   }
 
   void lt_copy(memory::arena &arena, const array<T> &arr) {

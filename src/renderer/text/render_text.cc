@@ -1,7 +1,6 @@
 #include "render_text.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/debug.hh"
-#include "common/hash_table.hh"
 #include "common/lru_cache.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
@@ -54,8 +53,7 @@ struct internal_font {
   bool invalidate;
   size_t invalidation_count;
 
-  pyro::container::arena_vector<internal_size_info> sizes;
-  hash_table<uint32_t, internal_size_info> size_lookup;
+  pyro::container::hash_table<uint32_t, internal_size_info> size_lookup;
   lru_cache<size_t, render_text_location> locations;
 };
 
@@ -73,9 +71,10 @@ render_text_location create_glyph(size_t key, void *userdata) {
   uint32_t font_size = (key >> 32);
   uint32_t codepoint = key & 0xffffffff;
 
-  internal_size_info *size_info = hash_table_search(state->size_lookup, font_size);
+  auto a = state->size_lookup.find(font_size);
+  internal_size_info &size_info = a->val;
 
-  FT_Activate_Size(size_info->size);
+  FT_Activate_Size(size_info.size);
 
   render_text_location location;
 
@@ -166,8 +165,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
                                        create_glyph,
                                        delete_glyph,
                                        i_font);
-  i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
-  i_font->sizes.lt_init(FONT_SIZE_MAX - FONT_SIZE_MIN + 1);
+  i_font->size_lookup.lt_init();
 
   size_t texture_size =
       std::min(state->api.renderer.get_max_texture_size(), (size_t)FONT_MIN_GLYPH_ATLAS_SIZE);
@@ -198,7 +196,7 @@ APIFUNC render_font_info render_font_get_info(app_state *state, renderer_font fo
   render_font_info info;
 
   info.atlas_size = {i_font->glyph_data.w, i_font->glyph_data.h};
-  info.ht_entries = i_font->locations.index.nentries;
+  info.ht_entries = i_font->locations.index.size();
   info.texture = i_font->glyph_texture;
   info.cache_entries = i_font->locations.nentries;
 
@@ -238,46 +236,48 @@ void render_text(app_state *state,
   uint32_t scaled_size = size * dpi;
 
   internal_font *i_font = (internal_font *)font.index;
-  internal_size_info *i_size = hash_table_search(i_font->size_lookup, (uint32_t)scaled_size);
+  auto i_size_it = i_font->size_lookup.find((uint32_t)scaled_size);
+  internal_size_info new_size;
 
-  if (!i_size) {
-    i_font->sizes.push_back({});
-    i_size = &i_font->sizes[i_font->sizes.size() - 1];
-    hash_table_insert(i_font->size_lookup, scaled_size, i_size);
-
-    FT_New_Size(i_font->ft_face, &i_size->size);
-    FT_Activate_Size(i_size->size);
+  if (i_size_it == i_font->size_lookup.end()) {
+    FT_New_Size(i_font->ft_face, &new_size.size);
+    FT_Activate_Size(new_size.size);
     FT_Set_Pixel_Sizes(i_font->ft_face, 0, scaled_size);
-    i_size->hb_font = hb_ft_font_create(i_font->ft_face, nullptr);
-    i_size->hb_buffer = hb_buffer_create();
+    new_size.hb_font = hb_ft_font_create(i_font->ft_face, nullptr);
+    new_size.hb_buffer = hb_buffer_create();
 
-    i_size->line_height = i_size->size->metrics.ascender;
+    new_size.line_height = new_size.size->metrics.ascender;
+
+    i_font->size_lookup.insert(scaled_size, new_size);
+  } else {
+    new_size = i_size_it->val;
   }
+  internal_size_info i_size = new_size;
 
   glm::vec2 current_pos = pos * dpi;
-  FT_Activate_Size(i_size->size);
+  FT_Activate_Size(i_size.size);
 
   {
     ZoneScopedN("Reset Buffer");
-    hb_buffer_reset(i_size->hb_buffer);
+    hb_buffer_reset(i_size.hb_buffer);
   }
 
   {
     ZoneScopedN("Add UTF8 Text to buffer");
-    hb_buffer_add_utf8(i_size->hb_buffer, text, -1, 0, -1);
-    hb_buffer_guess_segment_properties(i_size->hb_buffer);
+    hb_buffer_add_utf8(i_size.hb_buffer, text, -1, 0, -1);
+    hb_buffer_guess_segment_properties(i_size.hb_buffer);
   }
 
   {
     ZoneScopedN("Shape");
-    hb_shape(i_size->hb_font, i_size->hb_buffer, NULL, 0);
+    hb_shape(i_size.hb_font, i_size.hb_buffer, NULL, 0);
   }
 
   {
     ZoneScopedN("Process Glyphs");
-    uint32_t len = hb_buffer_get_length(i_size->hb_buffer);
-    hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(i_size->hb_buffer, NULL);
-    hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(i_size->hb_buffer, NULL);
+    uint32_t len = hb_buffer_get_length(i_size.hb_buffer);
+    hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(i_size.hb_buffer, NULL);
+    hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(i_size.hb_buffer, NULL);
 
     for (size_t i = 0; i < len; i++) {
       uint32_t cp = buffer_info[i].codepoint;
@@ -350,10 +350,10 @@ void render_font_finish(app_state *state, renderer_font font) {
 void render_font_delete(app_state *state, renderer_font font) {
   internal_font *i_font = (internal_font *)font.index;
 
-  for (auto &sz : i_font->sizes) {
-    hb_buffer_destroy(sz.hb_buffer);
-    hb_font_destroy(sz.hb_font);
-    FT_Done_Size(sz.size);
+  for (auto &sz : i_font->size_lookup) {
+    hb_buffer_destroy(sz.val.hb_buffer);
+    hb_font_destroy(sz.val.hb_font);
+    FT_Done_Size(sz.val.size);
   }
 
   FT_Done_Face(i_font->ft_face);
