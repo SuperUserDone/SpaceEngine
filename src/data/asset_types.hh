@@ -5,6 +5,7 @@
 // opaque pointers to avoid a _possible_ cache miss when looking up the actual values we need. Might
 // not be neccacary though, I have not benchmarked it
 
+#include <pyrolib/container/array.hh>
 #include <glm/glm.hpp>
 #include <stdint.h>
 
@@ -46,7 +47,7 @@ struct texture_data {
 };
 
 struct renderer_mesh {
-  uint32_t index;
+  size_t index;
   uint32_t triangle_vertex_count;
 };
 
@@ -73,8 +74,7 @@ struct pipeline_data {
 
 struct renderer_pipeline {
   uint32_t index;
-  size_t uniform_count;
-  size_t *uniform_indicies;
+  pyro::container::array<size_t> uniform_indicies;
 };
 
 struct framebuffer_data {

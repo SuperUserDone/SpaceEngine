@@ -6,9 +6,8 @@
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
-#include "memory/memory_arena.hh"
-#include "memory/memory_arena_typed.hh"
 #include "memory/memory_pool.hh"
+#include "pyrolib/container/arena_vector.hh"
 #include "renderer/render_batch.hh"
 #include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
@@ -55,7 +54,7 @@ struct internal_font {
   bool invalidate;
   size_t invalidation_count;
 
-  mem_arena_typed<internal_size_info> sizes;
+  pyro::container::arena_vector<internal_size_info> sizes;
   hash_table<uint32_t, internal_size_info> size_lookup;
   lru_cache<size_t, render_text_location> locations;
 };
@@ -168,7 +167,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
                                        delete_glyph,
                                        i_font);
   i_font->size_lookup = hash_table_create<uint32_t, internal_size_info>(state->permanent_arena);
-  i_font->sizes = arena_typed_create<internal_size_info>(FONT_SIZE_MAX - FONT_SIZE_MIN + 1);
+  i_font->sizes.lt_init(FONT_SIZE_MAX - FONT_SIZE_MIN + 1);
 
   size_t texture_size =
       std::min(state->api.renderer.get_max_texture_size(), (size_t)FONT_MIN_GLYPH_ATLAS_SIZE);
@@ -207,7 +206,7 @@ APIFUNC render_font_info render_font_get_info(app_state *state, renderer_font fo
 }
 
 void render_text_init(app_state *state) {
-  state->render_text_state = arena_push_struct(state->permanent_arena, render_text_state);
+  state->render_text_state = state->permanent_arena.push<render_text_state>();
   state->render_text_state->fonts = pool_create<internal_font>(64);
 
   init_ft(state);
@@ -215,7 +214,6 @@ void render_text_init(app_state *state) {
 
 void render_text_quit(app_state *state) {
   quit_ft(state);
-  // TODO Make better
 }
 
 void queue_rect(render_batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
@@ -243,7 +241,8 @@ void render_text(app_state *state,
   internal_size_info *i_size = hash_table_search(i_font->size_lookup, (uint32_t)scaled_size);
 
   if (!i_size) {
-    i_size = arena_typed_push(i_font->sizes);
+    i_font->sizes.push_back({});
+    i_size = &i_font->sizes[i_font->sizes.size() - 1];
     hash_table_insert(i_font->size_lookup, scaled_size, i_size);
 
     FT_New_Size(i_font->ft_face, &i_size->size);
@@ -351,11 +350,10 @@ void render_font_finish(app_state *state, renderer_font font) {
 void render_font_delete(app_state *state, renderer_font font) {
   internal_font *i_font = (internal_font *)font.index;
 
-  for (size_t i = 0; i < arena_typed_get_size(i_font->sizes); i++) {
-    internal_size_info *sz = arena_typed_pop(i_font->sizes);
-    hb_buffer_destroy(sz->hb_buffer);
-    hb_font_destroy(sz->hb_font);
-    FT_Done_Size(sz->size);
+  for (auto &sz : i_font->sizes) {
+    hb_buffer_destroy(sz.hb_buffer);
+    hb_font_destroy(sz.hb_font);
+    FT_Done_Size(sz.size);
   }
 
   FT_Done_Face(i_font->ft_face);

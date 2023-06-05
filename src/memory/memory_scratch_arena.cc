@@ -1,8 +1,7 @@
 #include "memory_scratch_arena.hh"
 #include "common/debug.hh"
-#include "memory_arena.hh"
 
-thread_local static mem_arena arenas[MAX_SCRATCH_STACKS];
+thread_local static pyro::memory::arena arenas[MAX_SCRATCH_STACKS];
 thread_local static bool init = false;
 thread_local static size_t index = 0;
 
@@ -10,7 +9,7 @@ mem_scratch_arena arena_scratch_get() {
   // Lazy-init the arenas
   if (!init) {
     for (size_t i = 0; i < MAX_SCRATCH_STACKS; i++) {
-      arenas[i] = arena_create();
+      arenas[i].lt_init(4096 * 2048); // 2048 pages
     }
     init = true;
   }
@@ -36,5 +35,5 @@ void arena_scratch_free(mem_scratch_arena &arena) {
                arena.index);
 
   // Clear the arena for the next person.
-  arena_pop_to(arena, arena.arena.base);
+  arena.arena.clear();
 }

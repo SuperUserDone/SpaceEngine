@@ -6,15 +6,15 @@
 #include "common/hash.hh"
 #include "common/result.hh"
 #include "data/asset_storage.hh"
-#include "memory/memory_arena.hh"
 #include "memory/memory_scratch_arena.hh"
 #include "tracy/Tracy.hpp"
+#include <pyrolib/memory/arena.hh>
 #include <thread>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor &desc) {
+result<asset_data> loader_load_texture(pyro::memory::arena &arena, const asset_descriptor &desc) {
   ZoneScopedN("Texture Load");
 
   int x, y, c;
@@ -23,7 +23,7 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
   if (!data)
     return result_err<asset_data>("Could not load file %s from disk", desc.texture.file_path);
 
-  void *new_data = arena_push_atomic(arena, x * y * c);
+  void *new_data = arena.push(x * y * c);
   memcpy(new_data, data, x * y * c);
 
   stbi_image_free(data);
@@ -56,7 +56,7 @@ result<asset_data> loader_load_texture(mem_arena &arena, const asset_descriptor 
   return result_ok(a);
 }
 
-result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor &desc) {
+result<asset_data> loader_load_pipeline(pyro::memory::arena &arena, const asset_descriptor &desc) {
   ZoneScopedN("Pipeline Load");
   asset_data a;
   a.type = ASSET_TYPE_PIPELINE;
@@ -69,7 +69,7 @@ result<asset_data> loader_load_pipeline(mem_arena &arena, const asset_descriptor
   return result_ok<asset_data>(a);
 }
 
-result<asset_data> loader_load_font(mem_arena &arena, const asset_descriptor &desc) {
+result<asset_data> loader_load_font(pyro::memory::arena &arena, const asset_descriptor &desc) {
   ZoneScopedN("Pipeline Load");
   asset_data a;
 
@@ -79,7 +79,7 @@ result<asset_data> loader_load_font(mem_arena &arena, const asset_descriptor &de
   return result_ok(a);
 }
 
-void process_thread(mem_arena &arena, const asset_set &set, async_load_result *res) {
+void process_thread(pyro::memory::arena &arena, const asset_set &set, async_load_result *res) {
   ZoneScopedN("Load Proces Thread");
   while (1) {
     size_t i = res->i.fetch_add(1);
@@ -114,19 +114,19 @@ void process_thread(mem_arena &arena, const asset_set &set, async_load_result *r
   }
 }
 
-async_load_result *asset_loader_load_async(mem_arena &arena,
+async_load_result *asset_loader_load_async(pyro::memory::arena &arena,
                                            app_state *state,
                                            const asset_set &set) {
   ZoneScopedN("Async Asset Load Begin");
 
-  async_load_result *res = arena_push_struct(arena, async_load_result);
-  res->count = set.count;
+  async_load_result *res = arena.push<async_load_result>();
+  res->count = set.descriptors.size();
   res->loaded = 0;
   res->i = 0;
-  res->result.count = set.count;
+  res->has_error = false;
 
   // allocate the asset data in the result
-  res->result.set = arena_push_array(arena, asset_data, set.count);
+  res->result.set.lt_init(arena, set.descriptors.size());
 
   {
     ZoneScopedN("Start Loader Threads");
@@ -136,7 +136,7 @@ async_load_result *asset_loader_load_async(mem_arena &arena,
         std::min(std::max((int)hw_threads - 2, (int)1), MAX_NUM_LOADER_THREADS);
 
     for (int i = 0; i < res->loader_thread_count; i++) {
-      res->loader_threads[i] = std::thread(process_thread, std::ref(arena), std::cref(set), res);
+      new(&res->loader_threads[i]) std::thread(process_thread, std::ref(arena), std::cref(set), res);
     }
 
     return res;
@@ -198,7 +198,7 @@ result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
   return result_ok(true);
 }
 
-result<async_load_result *> asset_loader_load_file_async(mem_arena &arena,
+result<async_load_result *> asset_loader_load_file_async(pyro::memory::arena &arena,
                                                          app_state *state,
                                                          const char *filename) {
   ZoneScopedN("Load file Async start");

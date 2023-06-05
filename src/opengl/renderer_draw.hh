@@ -15,42 +15,37 @@ inline static void bind_pipeline(renderer_pipeline *pipeline) {
 inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
   ZoneScopedN("GPU Bind Pipeline Settings");
   int bound_tex = 0;
-  for (size_t i = 0; i < s->uniform_count; i++) {
-    switch (s->uniforms[i].type) {
+  for (auto &uniform : s->uniforms) {
+    switch (uniform.type) {
     case UNIFORM_TYPE_SCALAR:
-      glUniform1f(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].scalar);
+      glUniform1f(p->uniform_indicies[uniform.index], uniform.scalar);
       break;
     case UNIFORM_TYPE_TEXTURE:
       glActiveTexture(GL_TEXTURE0 + bound_tex);
-      glBindTexture(GL_TEXTURE_2D, s->uniforms[i].texture.index);
-      glUniform1i(p->uniform_indicies[s->uniforms[i].index], bound_tex++);
+      glBindTexture(GL_TEXTURE_2D, uniform.texture.index);
+      glUniform1i(p->uniform_indicies[uniform.index], bound_tex++);
       break;
     case UNIFORM_TYPE_VEC2:
-      glUniform2f(p->uniform_indicies[s->uniforms[i].index],
-                  s->uniforms[i].vec2.x,
-                  s->uniforms[i].vec2.y);
+      glUniform2f(p->uniform_indicies[uniform.index], uniform.vec2.x, uniform.vec2.y);
       break;
     case UNIFORM_TYPE_VEC3:
-      glUniform3f(p->uniform_indicies[s->uniforms[i].index],
-                  s->uniforms[i].vec3.x,
-                  s->uniforms[i].vec3.y,
-                  s->uniforms[i].vec3.z);
+      glUniform3f(p->uniform_indicies[uniform.index],
+                  uniform.vec3.x,
+                  uniform.vec3.y,
+                  uniform.vec3.z);
       break;
     case UNIFORM_TYPE_VEC4:
-      glUniform4f(p->uniform_indicies[s->uniforms[i].index],
-                  s->uniforms[i].vec4.x,
-                  s->uniforms[i].vec4.y,
-                  s->uniforms[i].vec4.z,
-                  s->uniforms[i].vec4.w);
+      glUniform4f(p->uniform_indicies[uniform.index],
+                  uniform.vec4.x,
+                  uniform.vec4.y,
+                  uniform.vec4.z,
+                  uniform.vec4.w);
       break;
     case UNIFORM_TYPE_MAT4:
-      glUniformMatrix4fv(p->uniform_indicies[s->uniforms[i].index],
-                         1,
-                         GL_FALSE,
-                         (float *)&s->uniforms[i].mat4);
+      glUniformMatrix4fv(p->uniform_indicies[uniform.index], 1, GL_FALSE, (float *)&uniform.mat4);
       break;
     case UNIFORM_TYPE_INTEGER:
-      glUniform1i(p->uniform_indicies[s->uniforms[i].index], s->uniforms[i].integer);
+      glUniform1i(p->uniform_indicies[uniform.index], uniform.integer);
       break;
     }
   }
@@ -59,7 +54,7 @@ inline static void bind_settings(renderer_pipeline *p, pipeline_settings *s) {
 inline static void draw_mesh(renderer_mesh *mesh) {
   ZoneScopedN("Drawcall mesh");
 
-  internal_mesh *m = pool_get_at_index(rstate->internal_mesh_data, mesh->index);
+  internal_mesh *m = reinterpret_cast<internal_mesh *>(mesh->index);
   glBindVertexArray(m->vao);
 
   glDrawElements(GL_TRIANGLES, mesh->triangle_vertex_count, GL_UNSIGNED_INT, 0);

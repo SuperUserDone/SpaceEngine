@@ -18,7 +18,7 @@ void init(app_state *state) {
   state->game.renderer.bloom_params = {1.f, 0.9f, 0.2f, 2.5f};
   state->game.renderer.bloom_size = 0.001f;
 
-  state->game.solar_system = arena_push_struct(state->permanent_arena, solar_system);
+  state->game.solar_system = state->permanent_arena.push<solar_system>();
   state->game.solar_system->star.color = {255.f / 255.f, 113.f / 255.f, 0.f / 255.f};
   state->game.solar_system->star.pos = {0.f, 0.f};
   state->game.solar_system->star.raduis = 10.f;

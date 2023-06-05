@@ -1,6 +1,7 @@
 #pragma once
 
 #include "data/asset_types.hh"
+#include "pyrolib/memory/arena.hh"
 #include "renderer/pipeline_settings.hh"
 
 typedef void (*loaded_proc)(void);
@@ -8,7 +9,7 @@ typedef loaded_proc (*load_proc)(const char *);
 
 struct app_state;
 
-typedef bool (*renderer_init_fun)(mem_arena &scratch, app_state *state, load_proc);
+typedef bool (*renderer_init_fun)(app_state *state, load_proc);
 typedef bool (*renderer_shutdown_fun)();
 typedef void (*renderer_set_viewport_fun)(int x, int y);
 typedef void (*renderer_clear_fun)(float r, float g, float b, float a);

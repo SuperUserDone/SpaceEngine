@@ -13,11 +13,12 @@
 // I've made the hashmap header only to force some more inlining
 
 #include "common/hash.hh"
-#include "common/hash_table.hh"
-#include "memory/memory_arena.hh"
 #include "win32_export.hh"
 #include <iterator>
+#include <pyrolib/container/array.hh>
+#include <pyrolib/memory/arena.hh>
 #include <string.h>
+
 
 template <typename key_type, typename val_type>
 struct hash_table_entry {
@@ -29,18 +30,17 @@ struct hash_table_entry {
 
 template <typename key_type, typename val_type>
 struct hash_table {
-  hash_table_entry<key_type, val_type> *e;
+  pyro::container::array<hash_table_entry<key_type, val_type>> entries;
   size_t nentries;
 
   size_t (*hash_fun)(key_type type);
   bool (*comp_fun)(key_type l, key_type r);
-  size_t size;
 
   struct iterator {
     using iterator_category = std::forward_iterator_tag;
     using difference_type = std::ptrdiff_t;
     using value_type = hash_table_entry<key_type, val_type>;
-    using pointer = value_type*;     // or also value_type*
+    using pointer = value_type *;   // or also value_type*
     using reference = value_type &; // or also value_type&
 
     iterator(pointer data)
@@ -81,15 +81,15 @@ struct hash_table {
   };
 
   iterator begin() {
-    auto *entry = e;
-    while (entry->val == nullptr && &e[size] != entry) {
+    auto entry = entries.begin();
+    while (entry->val == nullptr && entry != end()) {
       entry++;
     }
     return iterator(entry);
   }
 
   iterator end() {
-    return iterator(&e[size]);
+    return iterator(entries.end());
   }
 };
 
@@ -115,7 +115,7 @@ inline bool hash_table_default_compare<const char *>(const char *string1, const 
 
 template <typename key_type = const char *, typename val_type = void *>
 static inline hash_table<key_type, val_type> hash_table_create(
-    mem_arena &a,
+    pyro::memory::arena &a,
     size_t size = 0xffff,
     size_t (*hash_fun)(key_type type) = nullptr,
     bool (*comp_fun)(key_type l, key_type r) = nullptr) {
@@ -125,12 +125,11 @@ static inline hash_table<key_type, val_type> hash_table_create(
   if (!comp_fun)
     comp_fun = hash_table_default_compare<key_type>;
 
-  return {(hash_table_entry<key_type, val_type> *)
-              arena_push_zero(a, sizeof(hash_table_entry<key_type, val_type>) * size),
-          0,
-          hash_fun,
-          comp_fun,
-          size};
+  hash_table<key_type, val_type> t = {{}, 0, hash_fun, comp_fun};
+
+  t.entries.lt_init(a, size);
+
+  return t;
 }
 
 template <typename key_type>
@@ -160,7 +159,7 @@ template <typename key_type, typename val_type>
 static inline bool hash_table_insert(hash_table<key_type, val_type> &t,
                                      key_type key,
                                      val_type *value) {
-  if (t.size == t.nentries)
+  if (t.entries.size() == t.nentries)
     return false;
 
   size_t hash = t.hash_fun(key);
@@ -169,27 +168,27 @@ static inline bool hash_table_insert(hash_table<key_type, val_type> &t,
     printf("Err");
   }
 
-  size_t location = hash % t.size;
+  size_t location = hash % t.entries.size();
 
   hash_table_entry<key_type, val_type> entry = {key_copy(key), hash, value, 0};
 
   int64_t loc = _hash_table_get_key_location(t, key);
   if (loc >= 0) {
-    key_delete(t.e[loc].key);
-    t.e[loc] = entry;
+    key_delete(t.entries[loc].key);
+    t.entries[loc] = entry;
     return true;
   }
 
-  while (t.e[location].val != nullptr) {
-    if (entry.cost > t.e[location].cost) {
-      hash_table_entry temp = t.e[location];
-      t.e[location] = entry;
+  while (t.entries[location].val != nullptr) {
+    if (entry.cost > t.entries[location].cost) {
+      hash_table_entry temp = t.entries[location];
+      t.entries[location] = entry;
       entry = temp;
     }
     entry.cost++;
-    location = (location + 1) % t.size;
+    location = (location + 1) % t.entries.size();
   }
-  t.e[location] = entry;
+  t.entries[location] = entry;
   t.nentries++;
   return true;
 };
@@ -199,13 +198,13 @@ static inline int64_t _hash_table_get_key_location(hash_table<key_type, val_type
                                                    key_type key) {
   size_t hash = t.hash_fun(key);
 
-  size_t location = hash % t.size;
+  size_t location = hash % t.entries.size();
 
   int64_t loc = -1;
-  for (size_t cost = 0; t.e[location].cost >= cost; cost++, location++) {
-    location = location % t.size;
+  for (size_t cost = 0; t.entries[location].cost >= cost; cost++, location++) {
+    location = location % t.entries.size();
 
-    if (t.e[location].hash == hash && t.comp_fun(t.e[location].key, key)) {
+    if (t.entries[location].hash == hash && t.comp_fun(t.entries[location].key, key)) {
       loc = location;
       break;
     }
@@ -220,7 +219,7 @@ template <typename key_type, typename val_type>
 static inline val_type *hash_table_search(hash_table<key_type, val_type> &t, key_type key) {
   int64_t loc = _hash_table_get_key_location(t, key);
   if (loc >= 0) {
-    return t.e[loc].val;
+    return t.entries[loc].val;
   } else {
     return nullptr;
   }
@@ -232,15 +231,15 @@ static inline void hash_table_delete(hash_table<key_type, val_type> &t, key_type
   if (loc < 0)
     return;
 
-  key_delete(t.e[loc].key);
+  key_delete(t.entries[loc].key);
   while (true) {
     size_t pl = loc;
-    loc = (loc + 1) % t.size;
-    if (t.e[loc].cost > 0) {
-      t.e[pl] = t.e[loc];
-      t.e[pl].cost--;
+    loc = (loc + 1) % t.entries.size();
+    if (t.entries[loc].cost > 0) {
+      t.entries[pl] = t.entries[loc];
+      t.entries[pl].cost--;
     } else {
-      t.e[pl] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
+      t.entries[pl] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
       t.nentries--;
       break;
     }
@@ -249,10 +248,10 @@ static inline void hash_table_delete(hash_table<key_type, val_type> &t, key_type
 
 template <typename key_type, typename val_type>
 static inline void hash_table_clear(hash_table<key_type, val_type> &t) {
-  for (size_t i = 0; i < t.size; i++) {
-    if (t.e[i].val != nullptr) {
-      key_delete(t.e[i].key);
-      t.e[i] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
+  for (size_t i = 0; i < t.entries.size(); i++) {
+    if (t.entries[i].val != nullptr) {
+      key_delete(t.entries[i].key);
+      t.entries[i] = hash_table_entry<key_type, val_type>{0, 0, 0, 0};
     }
   }
 

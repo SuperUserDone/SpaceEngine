@@ -1,6 +1,5 @@
 #include "common/sdef_parser.hh"
 #include "common/result.hh"
-#include "memory/memory_arena.hh"
 #include "memory/memory_scratch_arena.hh"
 
 #include <ctype.h>
@@ -70,11 +69,11 @@ static inline token_type peek_type(token *tokens, int i) {
   return tokens[i].type;
 }
 
-static inline result<token *> get_tokens(mem_arena &temp,
+static inline result<token *> get_tokens(pyro::memory::arena &temp,
                                          const char *str,
                                          size_t len,
                                          size_t &out_len) {
-  token *base = arena_push_struct(temp, token);
+  token *base = temp.push<token>();
   base[out_len].type = TOKEN_NONE;
   base[out_len].len = 0;
   base[out_len].start = str;
@@ -160,7 +159,7 @@ static inline result<token *> get_tokens(mem_arena &temp,
       col--;
     }
 
-    arena_push_struct(temp, token);
+    temp.push<token>();
     out_len++;
     base[out_len].type = TOKEN_NONE;
     base[out_len].len = 0;
@@ -238,13 +237,13 @@ void print_tokens(token *tokens, size_t n) {
   }
 }
 
-static inline result<> parse_property(mem_arena &arena, sdef_property *p, token *tokens, int &i) {
+static inline result<> parse_property(pyro::memory::arena &arena,
+                                      sdef_property *p,
+                                      token *tokens,
+                                      int &i) {
   result_forward_err(id, eat(TOKEN_IDENTIFIER, tokens, i));
 
-  p->name = arena_push_array(arena, char, id.len + 1);
-  // Use a memcpy as it is slightly faster than strcpy and we know the length
-  memcpy(p->name, id.start, id.len);
-  p->name[id.len] = 0;
+  p->name = arena.push_cstring(id.start, id.len);
 
   switch (peek_type(tokens, i)) {
   case TOKEN_INTEGER: {
@@ -259,12 +258,7 @@ static inline result<> parse_property(mem_arena &arena, sdef_property *p, token 
     result_forward_err(string, eat(TOKEN_STRING, tokens, i));
 
     p->type = SDEF_TYPE_STRING;
-    p->string = arena_push_array(arena, char, string.len + 1);
-
-    // Use a memcpy as it is slightly faster than strcpy and we know the length
-    memcpy(p->string, string.start, string.len);
-
-    p->string[string.len] = 0;
+    p->string = arena.push_cstring(string.start, string.len);
 
     return result_ok(true);
   }
@@ -272,7 +266,7 @@ static inline result<> parse_property(mem_arena &arena, sdef_property *p, token 
     result_forward_err(_, eat(TOKEN_LSQUARE, tokens, i));
     p->type = SDEF_TYPE_STRING_ARRAY;
 
-    p->string_array = (char *)arena_push(arena, 0);
+    p->string_array = (char *)arena.push(0);
     p->array_count = 0;
     p->total_len = 0;
 
@@ -289,10 +283,7 @@ static inline result<> parse_property(mem_arena &arena, sdef_property *p, token 
       }
 
       result_forward_err(string, eat(TOKEN_STRING, tokens, i));
-      char *arr = arena_push_array(arena, char, string.len + 1);
-      // Memcpy faster than strcpy
-      memcpy(arr, string.start, string.len);
-      arr[string.len] = 0;
+      char *arr = arena.push_cstring(string.start, string.len);
 
       p->total_len += string.len + 1;
       p->array_count++;
@@ -336,35 +327,36 @@ static inline size_t count_properties(token *tokens, int i) {
   return count;
 }
 
-static inline result<> parse_block(mem_arena &arena, sdef_block *block, token *tokens, int &i) {
+static inline result<> parse_block(pyro::memory::arena &arena,
+                                   sdef_block *block,
+                                   token *tokens,
+                                   int &i) {
   result_forward_err(_l, eat(TOKEN_LSQUARE, tokens, i));
   result_forward_err(type, eat(TOKEN_IDENTIFIER, tokens, i));
   result_forward_err(_r, eat(TOKEN_RSQUARE, tokens, i));
   result_forward_err(name, eat(TOKEN_IDENTIFIER, tokens, i));
 
-  block->type = arena_push_array(arena, char, type.len + 1);
-  memcpy(block->type, type.start, type.len);
-  block->name = arena_push_array(arena, char, name.len + 1);
-  memcpy(block->name, name.start, name.len);
-
-  block->type[type.len] = 0;
-  block->name[name.len] = 0;
+  block->type = arena.push_cstring(type.start, type.len);
+  block->name = arena.push_cstring(name.start, name.len);
 
   // Not the best design in the world, but we count the number of props to allocate them in a
   // contiguous block
-  block->property_count = count_properties(tokens, i);
-  block->properties = arena_push_array(arena, sdef_property, block->property_count);
+  size_t props = count_properties(tokens, i);
+  block->properties.lt_init(arena, props);
 
-  for (int j = 0; j < block->property_count; j++) {
+  for (int j = 0; j < props; j++) {
     result_forward_err(_e, parse_property(arena, &block->properties[j], tokens, i));
   }
 
   return result_ok(true);
 }
 
-static inline result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, size_t token_count) {
-  sdef_dom *n = arena_push_struct(arena, sdef_dom);
-  n->block_count = 0;
+static inline result<sdef_dom *> parse_file(pyro::memory::arena &arena,
+                                            token *tokens,
+                                            size_t token_count) {
+  sdef_dom *n = arena.push<sdef_dom>();
+
+  size_t block_count = 0;
 
   for (int i = 0; i < token_count; i++) {
     // Not the best design in the world, but we count the number of blocks to allocate them in a
@@ -374,22 +366,22 @@ static inline result<sdef_dom *> parse_file(mem_arena &arena, token *tokens, siz
         peek_type(tokens, i + 1) == TOKEN_IDENTIFIER && //
         peek_type(tokens, i + 2) == TOKEN_RSQUARE &&    //
         peek_type(tokens, i + 3) == TOKEN_IDENTIFIER) {
-      n->block_count++;
+      block_count++;
     }
   }
 
   int token_index = 0;
 
-  n->blocks = arena_push_array(arena, sdef_block, n->block_count);
+  n->blocks.lt_init(arena, block_count);
 
-  for (int i = 0; i < n->block_count; i++) {
+  for (int i = 0; i < block_count; i++) {
     result_forward_err(_err, parse_block(arena, &n->blocks[i], tokens, token_index));
   }
 
   return result_ok(n);
 }
 
-result<sdef_dom *> sdef_parse(mem_arena &arena, const char *str, size_t len) {
+result<sdef_dom *> sdef_parse(pyro::memory::arena &arena, const char *str, size_t len) {
   size_t token_count = 0;
   mem_scratch_arena temp_arena = arena_scratch_get();
 

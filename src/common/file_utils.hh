@@ -3,10 +3,13 @@
 // This is a temp piece of code to assist in development to quickly load a file into a string.
 // Should be removed by release
 
-#include "memory/memory_arena.hh"
+#include "pyrolib/container/array.hh"
+#include <pyrolib/memory/arena.hh>
 #include <stdio.h>
 
-static inline char *load_file(mem_arena &arena, const char *path, const char * mode = "r") {
+static inline char *load_file(pyro::memory::arena &arena,
+                              const char *path,
+                              const char *mode = "r") {
   FILE *fp;
   size_t len = 0;
   size_t read;
@@ -17,15 +20,20 @@ static inline char *load_file(mem_arena &arena, const char *path, const char * m
   len = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  char *buf = (char *)arena_push_atomic(arena, sizeof(char) * (len + 1));
-  read = fread(buf, 1, len, fp);
+
+  pyro::container::array<char> buf;
+  buf.lt_init(arena, len+1);
+  read = fread(&buf[0], 1, len, fp);
   buf[read] = '\0';
 
   fclose(fp);
-  return buf;
+  return &buf[0];
 }
 
-static inline void *load_binary_file(mem_arena &arena, const char *path, size_t &len, const char * mode = "rb") {
+static inline void *load_binary_file(pyro::memory::arena &arena,
+                                     const char *path,
+                                     size_t &len,
+                                     const char *mode = "rb") {
   FILE *fp;
   size_t read;
 
@@ -33,13 +41,15 @@ static inline void *load_binary_file(mem_arena &arena, const char *path, size_t 
 
   fseek(fp, 0, SEEK_END);
   len = ftell(fp);
+
   fseek(fp, 0, SEEK_SET);
 
-  char *buf = (char *)arena_push_atomic(arena, sizeof(char) * (len));
-  read = fread(buf, 1, len, fp);
+  pyro::container::array<char> buf;
+  buf.lt_init(arena, len);
+  read = fread(&buf[0], 1, len, fp);
 
   len = read;
 
   fclose(fp);
-  return buf;
+  return &buf[0];
 }

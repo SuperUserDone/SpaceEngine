@@ -4,6 +4,7 @@
 #include "data/renderer_api.hh"
 #include "glad/gl.c"
 #include "memory/memory_pool.hh"
+#include "pyrolib/memory/arena.hh"
 #include "tracy/Tracy.hpp"
 
 #include "renderer_draw.hh"
@@ -17,15 +18,15 @@
 
 static renderer_state *rstate;
 
-bool renderer_init(mem_arena &scratch, app_state *state, load_proc proc) {
+bool renderer_init(app_state *state, load_proc proc) {
   gladLoadGL(proc);
   glEnable(GL_FRAMEBUFFER_SRGB);
 
   if (!state->renderer_state) {
-    rstate = arena_push_struct(state->permanent_arena, renderer_state);
+    rstate = state->permanent_arena.push<renderer_state>();
     rstate->internal_mesh_data = pool_create<internal_mesh>(65536);
     state->renderer_state = rstate;
-    rstate->perm_data = arena_create();
+    rstate->perm_data.lt_init();
     ImGui_ImplOpenGL3_Init("#version 330 core");
   } else {
     rstate = (renderer_state *)state->renderer_state;

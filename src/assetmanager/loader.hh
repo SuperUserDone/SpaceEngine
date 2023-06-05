@@ -8,10 +8,12 @@
 #include "data/app_state.hh"
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
+#include <pyrolib/container/array.hh>
+#include <pyrolib/memory/arena.hh>
 #include <string>
 #include <thread>
 
-#define MAX_NUM_LOADER_THREADS 8 
+#define MAX_NUM_LOADER_THREADS 8
 
 struct asset_data {
   asset_type type;
@@ -25,20 +27,19 @@ struct asset_data {
 };
 
 struct load_result {
-  asset_data *set;
-  size_t count;
+  pyro::container::array<asset_data> set;
 };
 
 struct async_load_result {
-  size_t count;
-  std::atomic_size_t loaded;
-  std::atomic_size_t i;
-  std::string error;
-  std::atomic_bool has_error;
+  size_t count = 0;
+  std::atomic_size_t loaded = 0;
+  std::atomic_size_t i = 0;
+  std::string error = "";
+  std::atomic_bool has_error = false;
   load_result result;
 
   std::thread loader_threads[MAX_NUM_LOADER_THREADS];
-  size_t loader_thread_count;
+  size_t loader_thread_count = 0;
 };
 
 struct async_load_result_info {
@@ -52,7 +53,7 @@ APIFUNC result<> asset_loader_upload_to_vram(app_state *state, async_load_result
 
 // Load the assets asynchornously. The arena should not be used elsewhere while loading, and the set
 // must remain available until after uploaded to vram.
-APIFUNC async_load_result *asset_loader_load_async(mem_arena &arena,
+APIFUNC async_load_result *asset_loader_load_async(pyro::memory::arena &arena,
                                                    app_state *state,
                                                    const asset_data &set);
 
@@ -64,6 +65,6 @@ APIFUNC result<> asset_loader_load_file_sync(app_state *state, const char *filen
 
 // Helper function for an async load. Does not upload to VRAM, needs to be done maunually. Arena
 // should not be used before all assets are finished loading.
-APIFUNC result<async_load_result *> asset_loader_load_file_async(mem_arena &arena,
+APIFUNC result<async_load_result *> asset_loader_load_file_async(pyro::memory::arena &arena,
                                                                  app_state *state,
                                                                  const char *filename);

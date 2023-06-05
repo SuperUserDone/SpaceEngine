@@ -104,12 +104,14 @@ result<> typecheck(const char *name,
   return result_ok(true);
 }
 
-result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
+result<> parse_texture(pyro::memory::arena &arena,
+                       const sdef_block &block,
+                       asset_descriptor &descriptor) {
   bool upsample_defined = false;
   bool downsample_defined = false;
   bool path_defined = false;
 
-  for (int i = 0; i < block.property_count; i++) {
+  for (int i = 0; i < block.properties.size(); i++) {
 
     result_forward_err(prop_type, tex_prop_from_str(block.properties[i].name));
     switch (prop_type) {
@@ -147,8 +149,7 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
           typecheck(descriptor.name, "path", SDEF_TYPE_STRING, path_defined, block.properties[i]));
 
       path_defined = true;
-      descriptor.texture.file_path =
-          arena_push_null_terminated_string(arena, block.properties[i].string);
+      descriptor.texture.file_path = arena.push_cstring(block.properties[i].string);
       break;
     }
     default:
@@ -168,12 +169,14 @@ result<> parse_texture(mem_arena &arena, const sdef_block &block, asset_descript
   return result_ok(true);
 }
 
-result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
+result<> parse_pipeline(pyro::memory::arena &arena,
+                        const sdef_block &block,
+                        asset_descriptor &descriptor) {
   bool frag_defined = false;
   bool vert_defined = false;
   bool uniform_defined = false;
 
-  for (int i = 0; i < block.property_count; i++) {
+  for (int i = 0; i < block.properties.size(); i++) {
     result_forward_err(prop_type, pipeline_prop_from_str(block.properties[i].name));
     switch (prop_type) {
     case PP_VERT: {
@@ -184,8 +187,7 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
                                    vert_defined,
                                    block.properties[i]));
 
-      descriptor.pipeline.vertex =
-          arena_push_null_terminated_string(arena, block.properties[i].string);
+      descriptor.pipeline.vertex = arena.push_cstring(block.properties[i].string);
       vert_defined = true;
       break;
     }
@@ -197,8 +199,7 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
                                    frag_defined,
                                    block.properties[i]));
 
-      descriptor.pipeline.fragment =
-          arena_push_null_terminated_string(arena, block.properties[i].string);
+      descriptor.pipeline.fragment = arena.push_cstring(block.properties[i].string);
       frag_defined = true;
       break;
     }
@@ -210,17 +211,16 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
                                    uniform_defined,
                                    block.properties[i]));
 
-      char *uniforms_info =
-          arena_push_string(arena, block.properties[i].string_array, block.properties[i].total_len);
+      char *uniforms_info = arena.push_cstring(block.properties[i].string_array, block.properties[i].total_len);
 
       size_t j = 0;
 
-      descriptor.pipeline.uniforms = (char **)arena_push(arena, 0);
+      descriptor.pipeline.uniforms = (char **)arena.push(0);
       descriptor.pipeline.uniforms_count = 0;
 
       while (j < block.properties[i].total_len) {
         size_t len = strlen(&uniforms_info[j]);
-        arena_push(arena, sizeof(char *));
+        arena.push<char*>();
         descriptor.pipeline.uniforms[descriptor.pipeline.uniforms_count++] = &uniforms_info[j];
         j += len + 1;
       }
@@ -245,10 +245,12 @@ result<> parse_pipeline(mem_arena &arena, const sdef_block &block, asset_descrip
   return result_ok(true);
 }
 
-result<> parse_font(mem_arena &arena, const sdef_block &block, asset_descriptor &descriptor) {
+result<> parse_font(pyro::memory::arena &arena,
+                    const sdef_block &block,
+                    asset_descriptor &descriptor) {
   bool path_defined = false;
 
-  for (int i = 0; i < block.property_count; i++) {
+  for (int i = 0; i < block.properties.size(); i++) {
     result_forward_err(prop_type, font_prop_from_str(block.properties[i].name));
     switch (prop_type) {
     case FP_PATH: {
@@ -259,7 +261,7 @@ result<> parse_font(mem_arena &arena, const sdef_block &block, asset_descriptor 
                                    path_defined,
                                    block.properties[i]));
 
-      descriptor.font.path = arena_push_null_terminated_string(arena, block.properties[i].string);
+      descriptor.font.path = arena.push_cstring(block.properties[i].string);
       path_defined = true;
       break;
     }
@@ -276,20 +278,19 @@ result<> parse_font(mem_arena &arena, const sdef_block &block, asset_descriptor 
   return result_ok(true);
 }
 
-result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filename) {
+result<asset_set> asset_set_load_from_file(pyro::memory::arena &arena, const char *filename) {
   mem_scratch_arena scratch = arena_scratch_get();
   const char *file_content = load_file(scratch, filename);
   result_forward_err(dom, sdef_parse(scratch, file_content, strlen(file_content)));
 
   asset_set s;
   // Allocate descriptors in the set
-  s.descriptors = arena_push_array(arena, asset_descriptor, dom->block_count);
-  s.count = dom->block_count;
+  s.descriptors.lt_init(arena, dom->blocks.size());
 
-  for (int i = 0; i < s.count; i++) {
+  for (size_t i = 0; i < s.descriptors.size(); i++) {
     result_forward_err(type, asset_type_from_str(dom->blocks[i].type));
     s.descriptors[i].type = type;
-    s.descriptors[i].name = arena_push_null_terminated_string(arena, dom->blocks[i].name);
+    s.descriptors[i].name = arena.push_cstring(dom->blocks[i].name);
 
     switch (type) {
     case ASSET_TYPE_TEXTURE: {

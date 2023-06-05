@@ -19,7 +19,8 @@
 // Note that in the dom arrays are stored as null terminated strings concatenated together
 
 #include "common/result.hh"
-#include "memory/memory_arena.hh"
+#include "pyrolib/container/array.hh"
+#include "pyrolib/memory/arena.hh"
 #include "win32_export.hh"
 #include <stdint.h>
 
@@ -48,13 +49,11 @@ struct sdef_property {
 struct sdef_block {
   char *name;
   char *type;
-  sdef_property *properties;
-  size_t property_count;
+  pyro::container::array<sdef_property> properties;
 };
 
 struct sdef_dom {
-  sdef_block *blocks;
-  size_t block_count;
+  pyro::container::array<sdef_block> blocks;
 };
 
-APIFUNC result<sdef_dom *> sdef_parse(mem_arena &arena, const char *str, size_t len);
+APIFUNC result<sdef_dom *> sdef_parse(pyro::memory::arena &arena, const char *str, size_t len);

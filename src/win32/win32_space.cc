@@ -6,7 +6,6 @@
 #include "data/event.hh"
 #include "data/renderer_api.hh"
 #include "imgui.h"
-#include "memory/memory_arena.hh"
 #include "renderer/text/render_text.hh"
 #include "sdl_helpers/events.hh"
 #include "tracy/Tracy.hpp"
@@ -19,8 +18,6 @@
 #include <windows.h>
 
 static char module_name[MAX_PATH];
-
-static mem_arena init_scratch;
 
 void win32_err(const char *err, bool die) {
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR!", err, nullptr);
@@ -92,7 +89,6 @@ void run_game_loop(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
 
   state->running = true;
-  arena_clear(init_scratch);
 
   state->time.dt = 0;
   state->time.t = 0;
@@ -111,7 +107,7 @@ void run_game_loop(app_state *state) {
     // Setup
     {
       ZoneScopedN("Setup");
-      arena_clear(state->frame_arena);
+      state->frame_arena.clear();
     }
 
     // Process Events
@@ -295,8 +291,7 @@ void hotreload_renderer(app_state *state) {
   free_renderer(state);
   load_renderer(state);
 
-  state->api.renderer.init(init_scratch, state, (load_proc)SDL_GL_GetProcAddress);
-  arena_clear(init_scratch);
+  state->api.renderer.init(state, (load_proc)SDL_GL_GetProcAddress);
 }
 
 int main(int argc, char *argv[]) {
@@ -306,9 +301,9 @@ int main(int argc, char *argv[]) {
     ZoneScopedN("Init");
     platform_err = win32_err;
 
-    state.permanent_arena = arena_create();
-    state.platform_state = arena_push_struct(state.permanent_arena, win32_state);
-    state.frame_arena = arena_create();
+    state.permanent_arena.lt_init();
+    state.platform_state = state.permanent_arena.push<win32_state>();
+    state.frame_arena.lt_init();
     state.renderer_state = nullptr;
 
     GetModuleFileName(nullptr, module_name, MAX_PATH);
@@ -332,9 +327,8 @@ int main(int argc, char *argv[]) {
 
     {
       ZoneScopedN("Init Renderer");
-      SPACE_ASSERT(
-          state.api.renderer.init(state.frame_arena, &state, (load_proc)SDL_GL_GetProcAddress),
-          "Failed to load renderer!");
+      SPACE_ASSERT(state.api.renderer.init(&state, (load_proc)SDL_GL_GetProcAddress),
+                   "Failed to load renderer!");
 
       asset_system_init(&state);
       render_text_init(&state);

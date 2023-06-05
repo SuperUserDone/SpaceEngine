@@ -5,8 +5,9 @@
 
 #include "common/debug.hh"
 #include "data/asset_types.hh"
-#include "memory/memory_arena.hh"
 #include <glm/glm.hpp>
+#include <pyrolib/container/array.hh>
+#include <pyrolib/memory/arena.hh>
 #include <stdint.h>
 
 enum uniform_type {
@@ -40,18 +41,17 @@ struct renderer_uniform {
 };
 
 struct pipeline_settings {
-  renderer_uniform *uniforms;
-  bool *index_assigned;
+  pyro::container::array<renderer_uniform> uniforms;
+  pyro::container::array<bool> index_assigned;
   size_t current_pos;
-  size_t uniform_count;
 };
 
-static inline pipeline_settings pipeline_settings_create(renderer_pipeline p, mem_arena &arena) {
+static inline pipeline_settings pipeline_settings_create(renderer_pipeline p,
+                                                         pyro::memory::arena &arena) {
   pipeline_settings s;
 
-  s.uniforms = arena_push_array(arena, renderer_uniform, p.uniform_count);
-  s.index_assigned = arena_push_array_zero(arena, bool, p.uniform_count);
-  s.uniform_count = p.uniform_count;
+  s.uniforms.lt_init(arena, p.uniform_indicies.size());
+  s.index_assigned.lt_init(arena, p.uniform_indicies.size());
   s.current_pos = 0;
 
   return s;
@@ -59,7 +59,7 @@ static inline pipeline_settings pipeline_settings_create(renderer_pipeline p, me
 
 static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t index, float val) {
   SPACE_ASSERT(
-      s.current_pos < s.uniform_count,
+      s.current_pos < s.uniforms.size(),
       "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to %f!",
       index,
       val);
@@ -74,7 +74,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t in
 }
 
 static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t index, int32_t val) {
-  SPACE_ASSERT(s.current_pos < s.uniform_count,
+  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting integer "
                "%llu to %d!",
                index,
@@ -92,7 +92,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t in
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  renderer_texture val) {
-  SPACE_ASSERT(s.current_pos < s.uniform_count,
+  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting texture "
                "%llu to %d!",
                index,
@@ -110,7 +110,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec2 val) {
-  SPACE_ASSERT(s.current_pos < s.uniform_count,
+  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting vec2 %llu "
                "to {%f, %f}!",
                index,
@@ -129,7 +129,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec3 val) {
-  SPACE_ASSERT(s.current_pos < s.uniform_count,
+  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting vec3 %llu "
                "to {%f, %f, %f}!",
                index,
@@ -149,7 +149,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec4 val) {
-  SPACE_ASSERT(s.current_pos < s.uniform_count,
+  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to "
                "{%f, %f, %f, %f}!",
                index,
@@ -171,7 +171,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::mat4 val) {
   SPACE_ASSERT(
-      s.current_pos < s.uniform_count,
+      s.current_pos < s.uniforms.size(),
       "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to matrix!",
       index);
   SPACE_ASSERT(!s.index_assigned[s.current_pos],

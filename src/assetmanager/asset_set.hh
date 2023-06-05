@@ -2,6 +2,8 @@
 
 #include "common/result.hh"
 #include "data/asset_storage.hh"
+#include "pyrolib/container/array.hh"
+#include <pyrolib/memory/arena.hh>
 
 struct asset_descriptor {
   asset_type type;
@@ -25,8 +27,7 @@ struct asset_descriptor {
 };
 
 struct asset_set {
-  asset_descriptor *descriptors;
-  size_t count;
+  pyro::container::array<asset_descriptor> descriptors;
 };
 
-APIFUNC result<asset_set> asset_set_load_from_file(mem_arena &arena, const char *filename);
+APIFUNC result<asset_set> asset_set_load_from_file(pyro::memory::arena &arena, const char *filename);

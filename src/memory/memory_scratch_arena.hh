@@ -2,18 +2,18 @@
 
 // This is used to get a handle to thread-local arena objects for temp scratch allocations.
 
-#include "memory_arena.hh"
+#include <pyrolib/memory/arena.hh>
 
 #define MAX_SCRATCH_STACKS 8
 
 struct mem_scratch_arena {
-  mem_arena &arena;
+  pyro::memory::arena &arena;
   size_t index;
 
-  operator mem_arena &() {
+  operator pyro::memory::arena &() {
     return arena;
   }
 };
 
-APIFUNC mem_scratch_arena arena_scratch_get();
-APIFUNC void arena_scratch_free(mem_scratch_arena &scratch);
+APIFUNC extern mem_scratch_arena arena_scratch_get();
+APIFUNC extern void arena_scratch_free(mem_scratch_arena &scratch);

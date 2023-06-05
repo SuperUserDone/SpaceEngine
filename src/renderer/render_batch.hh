@@ -5,14 +5,14 @@
 #include "data/asset_types.hh"
 #include "data/game_state.hh"
 #include "data/glm_exts.hh"
+#include "pyrolib/container/arena_vector.hh"
 #include "renderer/pipeline_settings.hh"
 
 struct render_batch {
-  mesh_data data;
   renderer_mesh mesh;
 
-  mem_arena_typed<vertex> verticies_arena;
-  mem_arena_typed<uint32_t> indicies_arena;
+  pyro::container::arena_vector<vertex> verticies;
+  pyro::container::arena_vector<uint32_t> indicies;
 };
 
 APIFUNC render_batch render_batch_create(app_state *state, size_t max_batch_size = 2048);

@@ -3,8 +3,6 @@
 #include "common/hash_table.hh"
 #include "data/asset_storage.hh"
 #include "data/asset_types.hh"
-#include "memory/memory_arena.hh"
-#include "memory/memory_arena_typed.hh"
 #include "memory/memory_pool.hh"
 
 enum asset_type {

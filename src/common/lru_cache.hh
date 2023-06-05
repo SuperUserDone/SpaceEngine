@@ -4,8 +4,7 @@
 // hopefully allow more inlining
 
 #include "common/hash_table.hh"
-#include "memory/memory_arena.hh"
-#include <float.h>
+#include "pyrolib/memory/arena.hh"
 
 template <typename key_type, typename value_type>
 struct lru_element {
@@ -17,7 +16,7 @@ template <typename key_type, typename value_type>
 struct lru_cache {
   hash_table<key_type, lru_element<key_type, value_type>> index;
 
-  lru_element<key_type, value_type> *data;
+  pyro::container::array<lru_element<key_type, value_type>> data;
 
   value_type (*create_fun)(key_type key, void *userdata);
   void (*delete_fun)(value_type value, void *userdata);
@@ -25,13 +24,12 @@ struct lru_cache {
 
   size_t data_index;
   size_t data_index_begin;
-  size_t data_size;
   size_t nentries;
 };
 
 template <typename key_type, typename value_type>
 static inline lru_cache<key_type, value_type> lru_cache_create(
-    mem_arena &arena,
+    pyro::memory::arena &arena,
     size_t size,
     value_type (*create_fun)(key_type key, void *userdata),
     void (*delete_fun)(value_type value, void *userdata),
@@ -41,13 +39,10 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
   // Create the table with 50% more elements than required for better collision behavior
   cache.index =
       hash_table_create<key_type, lru_element<key_type, value_type>>(arena, (size * 3) / 2);
-  cache.data = (lru_element<key_type, value_type> *)arena_push(
-      arena,
-      sizeof(lru_element<key_type, value_type>) * size);
+  cache.data.lt_init(arena, size);
   cache.data_index = 0;
   cache.data_index_begin = 0;
   cache.nentries = 0;
-  cache.data_size = size;
   cache.create_fun = create_fun;
   cache.delete_fun = delete_fun;
   cache.userdata = userdata;
@@ -57,12 +52,12 @@ static inline lru_cache<key_type, value_type> lru_cache_create(
 
 template <typename key_type, typename value_type>
 static inline void lru_evict_if_full(lru_cache<key_type, value_type> &cache) {
-  if (cache.nentries + 1 == cache.data_size) {
+  if (cache.nentries + 1 == cache.data.size()) {
     hash_table_delete(cache.index, cache.data[cache.data_index_begin].key);
     key_delete(cache.data[cache.data_index_begin].key);
     cache.delete_fun(cache.data[cache.data_index_begin].val, cache.userdata);
 
-    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
+    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data.size();
     cache.nentries--;
 
   }
@@ -75,7 +70,7 @@ static inline value_type *lru_cache_find(lru_cache<key_type, value_type> &cache,
     lru_evict_if_full(cache);
     data = &cache.data[cache.data_index];
 
-    cache.data_index = (cache.data_index + 1) % cache.data_size;
+    cache.data_index = (cache.data_index + 1) % cache.data.size();
     data->key = key_copy(key);
     data->val = cache.create_fun(data->key, cache.userdata);
 
@@ -91,7 +86,7 @@ static inline void lru_cache_invalidate(lru_cache<key_type, value_type> &cache) 
   while (cache.data_index_begin != cache.data_index) {
     lru_element<key_type, value_type> *data = &cache.data[cache.data_index_begin];
     key_delete(data->key);
-    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data_size;
+    cache.data_index_begin = (cache.data_index_begin + 1) % cache.data.size();
   }
 
   hash_table_clear(cache.index);

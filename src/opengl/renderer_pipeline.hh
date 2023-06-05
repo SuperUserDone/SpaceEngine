@@ -4,7 +4,6 @@
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "glad/gl.h"
-#include "memory/memory_arena.hh"
 #include "opengl/renderer_state.hh"
 #include "tracy/Tracy.hpp"
 
@@ -69,11 +68,10 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
   // Get uniforms
   {
-    out.uniform_indicies = arena_push_array(rstate->perm_data, size_t, data->uniform_count);
+    out.uniform_indicies.lt_init(rstate->perm_data, data->uniform_count);
     for (int i = 0; i < data->uniform_count; i++) {
       out.uniform_indicies[i] = glGetUniformLocation(program, data->uniform_names[i]);
     }
-    out.uniform_count = data->uniform_count;
   }
 
   // Shaders no longer needed, so delete them

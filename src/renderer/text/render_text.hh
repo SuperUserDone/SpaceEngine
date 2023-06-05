@@ -4,8 +4,6 @@
 #include "common/win32_export.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
-#include "memory/memory_arena.hh"
-#include "memory/memory_arena_typed.hh"
 
 #define FONT_SIZE_MIN 1 
 #define FONT_SIZE_MAX 100 

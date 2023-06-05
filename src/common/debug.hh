@@ -6,6 +6,7 @@
 
 #include "common/win32_export.hh"
 #include "stdlib.h"
+#include "stdio.h"
 
 typedef void (*platform_error_func)(const char *msg, bool die);
 
