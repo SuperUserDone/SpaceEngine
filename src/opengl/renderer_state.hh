@@ -1,7 +1,7 @@
 #pragma once
 
-#include "memory/memory_pool.hh"
 #include "pyrolib/memory/arena.hh"
+#include "pyrolib/memory/pool.hh"
 
 struct internal_mesh {
   uint32_t vb;
@@ -10,7 +10,7 @@ struct internal_mesh {
 };
 
 struct renderer_state {
-  mem_pool<internal_mesh> internal_mesh_data;
+  pyro::memory::pool<internal_mesh> internal_mesh_data;
   pyro::memory::arena perm_data;
 };
 

@@ -2,7 +2,6 @@
 
 #include "data/asset_types.hh"
 #include "glad/gl.h"
-#include "memory/memory_pool.hh"
 #include "opengl/renderer_state.hh"
 #include "renderer_state.hh"
 #include "tracy/Tracy.hpp"
@@ -34,7 +33,7 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
 
 static inline renderer_mesh create_mesh(mesh_data *data) {
   ZoneScopedN("Create GPU Mesh");
-  internal_mesh *m = pool_alloc(rstate->internal_mesh_data);
+  internal_mesh *m = rstate->internal_mesh_data.alloc();
 
   // Create buffers
   {

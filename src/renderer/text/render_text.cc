@@ -6,8 +6,8 @@
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
-#include "memory/memory_pool.hh"
 #include "pyrolib/container/arena_vector.hh"
+#include "pyrolib/memory/pool.hh"
 #include "renderer/render_batch.hh"
 #include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
@@ -62,7 +62,7 @@ struct internal_font {
 struct render_text_state {
   FT_Library ft_lib;
 
-  mem_pool<internal_font> fonts;
+  pyro::memory::pool<internal_font> fonts;
 };
 
 render_text_location create_glyph(size_t key, void *userdata) {
@@ -148,7 +148,7 @@ void quit_ft(app_state *state) {
 
 APIFUNC extern renderer_font render_font_create(app_state *state, font_data *data) {
   render_text_state *info = state->render_text_state;
-  internal_font *i_font = pool_alloc(state->render_text_state->fonts);
+  internal_font *i_font = state->render_text_state->fonts.alloc();
   i_font->invalidate = false;
   i_font->invalidation_count = 0;
 
@@ -207,7 +207,7 @@ APIFUNC render_font_info render_font_get_info(app_state *state, renderer_font fo
 
 void render_text_init(app_state *state) {
   state->render_text_state = state->permanent_arena.push<render_text_state>();
-  state->render_text_state->fonts = pool_create<internal_font>(64);
+  state->render_text_state->fonts.lt_init(64);
 
   init_ft(state);
 }

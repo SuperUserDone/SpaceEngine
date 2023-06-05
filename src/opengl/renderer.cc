@@ -3,7 +3,6 @@
 #include "data/app_state.hh"
 #include "data/renderer_api.hh"
 #include "glad/gl.c"
-#include "memory/memory_pool.hh"
 #include "pyrolib/memory/arena.hh"
 #include "tracy/Tracy.hpp"
 
@@ -24,13 +23,15 @@ bool renderer_init(app_state *state, load_proc proc) {
 
   if (!state->renderer_state) {
     rstate = state->permanent_arena.push<renderer_state>();
-    rstate->internal_mesh_data = pool_create<internal_mesh>(65536);
     state->renderer_state = rstate;
-    rstate->perm_data.lt_init();
-    ImGui_ImplOpenGL3_Init("#version 330 core");
   } else {
     rstate = (renderer_state *)state->renderer_state;
   }
+
+  rstate->perm_data.lt_init();
+  rstate->internal_mesh_data.lt_init(65536);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
+
   return true;
 }
 
@@ -44,9 +45,10 @@ void renderer_clear(float r, float g, float b, float a) {
 }
 
 bool renderer_shutdown() {
-  for (int i = 0; i < 0; i++) {
-    glDeleteProgram(i);
-  }
+  rstate->internal_mesh_data.lt_done();
+  rstate->perm_data.lt_done();
+  rstate = nullptr;
+  ImGui_ImplOpenGL3_Shutdown();
   return true;
 }
 
@@ -84,7 +86,7 @@ void imgui_end() {
 
 size_t get_max_texture_size() {
   GLint ts;
-  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &ts); 
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &ts);
 
   return ts;
 }
