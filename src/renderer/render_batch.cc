@@ -70,3 +70,9 @@ void render_batch_render(app_state *state,
   pipeline_settings *pp = &settings;
   state->api.renderer.draw_meshes(1, &m, &pp, &pipeline);
 }
+
+void render_batch_delete(app_state *state, render_batch &batch) {
+  state->api.renderer.delete_mesh(batch.mesh);
+  batch.indicies.lt_done();
+  batch.verticies.lt_done();
+}

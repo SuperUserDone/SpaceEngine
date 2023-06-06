@@ -37,7 +37,7 @@ void init(app_state *state) {
 
 void render(app_state *state) {
   render_game(state);
-  renderer_font font = asset_font_get_render(state, "noto_sans_regular");
+  renderer_font font = asset_font_get_render(state, "default");
   render_font_reset(state, font);
   render_text(state, font, state->game.font_size, {100, 100}, state->game.text);
   render_font_finish(state, font);
@@ -71,13 +71,13 @@ void draw_debug_info(app_state *state) {
   }
 
   if (ImGui::CollapsingHeader("Text")) {
-    ImGui::InputText("Text", state->game.text, 256);
+    ImGui::InputText("Display text", state->game.text, 256);
 
     int font_size = state->game.font_size;
     ImGui::SliderInt("Font size", &font_size, 1, 100);
     state->game.font_size = font_size;
     render_font_info info =
-        render_font_get_info(state, asset_font_get_render(state, "noto_sans_regular"));
+        render_font_get_info(state, asset_font_get_render(state, "default"));
     ImGui::Image((void *)(size_t)info.texture.index, {256, 256});
 
     ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}",
@@ -87,9 +87,9 @@ void draw_debug_info(app_state *state) {
                 info.atlas_size.y);
   }
   if (ImGui::CollapsingHeader("Assets")) {
-    for (auto &i : state->assets.asset_lookup) {
+    /*for (auto &i : state->assets.) {
       ImGui::Text("%s\n", i.key);
-    }
+    }*/
   }
 
   ImGui::End();

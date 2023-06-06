@@ -22,3 +22,4 @@ APIFUNC void render_batch_render(app_state *state,
                                  render_batch &batch,
                                  renderer_pipeline &pipeline,
                                  pipeline_settings &settings);
+APIFUNC void render_batch_delete(app_state *state, render_batch &batch);

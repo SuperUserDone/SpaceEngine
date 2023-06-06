@@ -357,4 +357,8 @@ void render_font_delete(app_state *state, renderer_font font) {
   }
 
   FT_Done_Face(i_font->ft_face);
+  state->api.renderer.delete_texture(i_font->glyph_texture);
+  render_batch_delete(state, i_font->batch);
+
+  delete[] (uint8_t *)i_font->font_face_data;
 }

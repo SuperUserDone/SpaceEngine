@@ -193,8 +193,6 @@ void run_game_loop(app_state *state) {
       FrameMark;
     }
   }
-
-  asset_system_shutdown(state);
 }
 
 void init_sdl() {
@@ -278,20 +276,25 @@ void load_renderer(app_state *state) {
   ws->renderer = LoadLibrary(TEXT(new_name));
 
   ((fetch_api_fun)GetProcAddress(ws->renderer, "fetch_api"))(state);
+
+  SPACE_ASSERT(state->api.renderer.init(state, (load_proc)SDL_GL_GetProcAddress),
+               "Failed to load renderer!");
+
+  asset_system_init(state);
+  render_text_init(state);
 }
 
 void free_renderer(app_state *state) {
   win32_state *ws = (win32_state *)state->platform_state;
+  asset_system_shutdown(state);
+  render_text_quit(state);
+  state->api.renderer.shutdown();
   FreeLibrary(ws->renderer);
 }
 
 void hotreload_renderer(app_state *state) {
-  state->api.renderer.shutdown();
-
   free_renderer(state);
   load_renderer(state);
-
-  state->api.renderer.init(state, (load_proc)SDL_GL_GetProcAddress);
 }
 
 int main(int argc, char *argv[]) {
@@ -320,22 +323,17 @@ int main(int argc, char *argv[]) {
 
     init_sdl();
     create_window(&state);
-    load_renderer(&state);
-    load_code(&state);
-
     init_imgui(&state);
 
     {
       ZoneScopedN("Init Renderer");
-      SPACE_ASSERT(state.api.renderer.init(&state, (load_proc)SDL_GL_GetProcAddress),
-                   "Failed to load renderer!");
 
-      asset_system_init(&state);
-      render_text_init(&state);
+      load_renderer(&state);
     }
 
     {
       ZoneScopedN("Init Usercode");
+      load_code(&state);
       state.api.game.load_assets(&state);
       state.api.game.init(&state);
     }
@@ -343,7 +341,6 @@ int main(int argc, char *argv[]) {
 
   run_game_loop(&state);
 
-  render_text_quit(&state);
   free_renderer(&state);
   SDL_Quit();
 
