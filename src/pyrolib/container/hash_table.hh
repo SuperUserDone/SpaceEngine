@@ -6,6 +6,7 @@
 // a better resource to understand the basic working of the implementation
 // https://dspace.mit.edu/bitstream/handle/1721.1/130693/1251799942-MIT.pdf)
 
+#include "common/debug.hh"
 #include "common/hash.hh"
 #include "pyrolib/container/array.hh"
 #include "pyrolib/memory/arena.hh"
@@ -74,15 +75,36 @@ public:
     }
   }
 
+  void resize(size_t size) {
+    SPACE_ASSERT(m_growable, "Cannot resize non-heap allocated hash table!");
+    SPACE_ASSERT(size > m_used_entries,
+                 "Hash table cannot be resized to a size where all elements wont fit! %llu > %llu",
+                 m_used_entries,
+                 size);
+
+    pyro::container::array<hash_table_entry> old = m_entries;
+    memory::heap heap;
+    m_entries.lt_init(heap, size);
+
+    for (auto &e : old) {
+      if (e.set) {
+        insert(e.key, e.val);
+        key_delete(e.key);
+      }
+    }
+
+    old.lt_done(heap);
+  }
+
   iterator insert(const key_type &key, const val_type &val) {
-    if (m_entries.size() == m_used_entries)
-      return end();
+    if (m_entries.size() <= m_used_entries + 1) {
+      if (!m_growable)
+        return end();
+
+      resize(m_entries.size() * 2);
+    }
 
     size_t hash = hasher::hash(key);
-
-    if (hash == 0) {
-      printf("Err");
-    }
 
     size_t location = hash % m_entries.size();
 
@@ -106,7 +128,7 @@ public:
     }
     m_entries[location] = entry;
     m_used_entries++;
-  
+
     return iterator(&m_entries[location], m_entries.end());
   }
 
@@ -191,7 +213,7 @@ public:
     iterator(pointer data, pointer end)
         : m_ptr(data), m_end(end){
 
-          };
+                       };
 
     reference operator*() const {
       return *m_ptr;

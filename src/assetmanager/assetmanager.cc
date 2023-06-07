@@ -68,7 +68,7 @@ void asset_system_init(app_state *state) {
   state->assets.pipeline_data.lt_init(1024);
   state->assets.mesh_data.lt_init(1024);
   state->assets.framebuffer_data.lt_init(1024);
-  state->assets.font_data.lt_init(32);
+  state->assets.font_data.lt_init(64);
 
   init_default_assets(state);
 }
