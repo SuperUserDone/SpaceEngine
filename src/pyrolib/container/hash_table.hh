@@ -66,6 +66,7 @@ public:
     m_entries.lt_init(arena, size);
     memset(&m_entries[0], 0x00, m_entries.size() * sizeof(hash_table_entry));
   }
+
   void lt_done() {
     if (m_growable) {
       memory::heap heap;

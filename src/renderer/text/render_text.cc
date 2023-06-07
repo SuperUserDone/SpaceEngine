@@ -1,61 +1,20 @@
 #include "render_text.hh"
 #include "assetmanager/assetmanager.hh"
 #include "common/debug.hh"
-#include "common/lru_cache.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
+#include "internal_font.hh"
 #include "pyrolib/container/arena_vector.hh"
+#include "pyrolib/container/lru_cache.hh"
 #include "pyrolib/memory/pool.hh"
 #include "renderer/render_batch.hh"
+#include "renderer/text/glyph_builder.hh"
 #include "renderer/text/render_text.hh"
 #include "tracy/Tracy.hpp"
 
 #include <freetype/freetype.h>
-#include <freetype/ftsizes.h>
-#include <freetype/fttypes.h>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/scalar_constants.hpp>
-#include <glm/fwd.hpp>
-#include <harfbuzz/hb-ft.h>
-#include <harfbuzz/hb.h>
 #include <stdint.h>
-#include <vcruntime_string.h>
-
-#define PADDING 1
-
-struct render_text_location {
-  glm::vec2 uva;
-  glm::vec2 uvb;
-  glm::vec2 bearing;
-  glm::vec2 isize;
-};
-
-struct internal_size_info {
-  FT_Size size;
-  size_t line_height;
-
-  hb_font_t *hb_font;
-  hb_buffer_t *hb_buffer;
-};
-
-struct internal_font {
-  FT_Face ft_face;
-  void *font_face_data;
-
-  render_batch batch;
-  texture_data glyph_data;
-  glm::uvec2 glyph_data_offset;
-  size_t row_height;
-  renderer_texture glyph_texture;
-
-  bool tex_dirty;
-  bool invalidate;
-  size_t invalidation_count;
-
-  pyro::container::hash_table<uint32_t, internal_size_info> size_lookup;
-  lru_cache<size_t, render_text_location> locations;
-};
 
 struct render_text_state {
   FT_Library ft_lib;
@@ -63,73 +22,11 @@ struct render_text_state {
   pyro::memory::pool<internal_font> fonts;
 };
 
-render_text_location create_glyph(size_t key, void *userdata) {
-  ZoneScopedN("Create Text Glyph");
-  const int padding = PADDING;
-  internal_font *state = (internal_font *)userdata;
-
-  uint32_t font_size = (key >> 32);
-  uint32_t codepoint = key & 0xffffffff;
-
-  auto a = state->size_lookup.find(font_size);
-  internal_size_info &size_info = a->val;
-
-  FT_Activate_Size(size_info.size);
-
-  render_text_location location;
-
-  FT_Int32 flags = FT_LOAD_DEFAULT;
-
-  FT_Load_Glyph(state->ft_face, codepoint, flags);
-
-  FT_GlyphSlot slot = state->ft_face->glyph;
-  FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
-
-  FT_Bitmap ftBitmap = slot->bitmap;
-
-  glm::ivec2 size{ftBitmap.width, ftBitmap.rows};
-
-  if (state->glyph_data_offset.x + size.x > state->glyph_data.w) {
-    state->glyph_data_offset.x = padding;
-    state->glyph_data_offset.y += state->row_height;
-    state->row_height = padding;
-  }
-
-  if (size.y + state->glyph_data_offset.y >= state->glyph_data.h) {
-    state->invalidate = true;
-  } else {
-    for (int i = 0; i < size.y; i++) {
-      size_t x_offset = state->glyph_data_offset.x;
-      size_t y_offset = state->glyph_data_offset.y;
-      size_t w = state->glyph_data.w;
-      memcpy((uint8_t *)state->glyph_data.data + x_offset + ((i + y_offset) * w),
-             (uint8_t *)ftBitmap.buffer + i * size.x,
-             size.x);
-    }
-  }
-
-  location.uva = glm::vec2(state->glyph_data_offset) / (float)state->glyph_data.h;
-  location.uvb = location.uva + (glm::vec2(size) / (float)state->glyph_data.h);
-  location.isize = size;
-  location.bearing = glm::vec2(slot->bitmap_left, -slot->bitmap_top);
-
-  state->glyph_data_offset.x += size.x + padding;
-  state->row_height = std::max(state->row_height, (size_t)size.y + padding);
-
-  state->tex_dirty = true;
-  return location;
-}
-
 void update_gpu_texture(app_state *state, internal_font *font) {
   if (font->tex_dirty) {
     state->api.renderer.update_texture(&font->glyph_texture, &font->glyph_data);
     font->tex_dirty = false;
   }
-}
-
-void delete_glyph(render_text_location value, void *userdata) {
-  // app_state *state = (app_state *)userdata;
-  // TODO
 }
 
 void init_ft(app_state *state) {
@@ -160,11 +57,10 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
                                    0,
                                    &i_font->ft_face),
                "Could not load face!");
-  i_font->locations = lru_cache_create(state->permanent_arena,
-                                       FONT_MAX_GLYPH_COUNT,
-                                       create_glyph,
-                                       delete_glyph,
-                                       i_font);
+  glyph_builder *builder = state->permanent_arena.push<glyph_builder>();
+  builder->set_font(i_font);
+
+  i_font->locations.lt_init(state->permanent_arena, FONT_MAX_GLYPH_COUNT, builder);
   i_font->size_lookup.lt_init();
 
   size_t texture_size =
@@ -196,9 +92,9 @@ APIFUNC render_font_info render_font_get_info(app_state *state, renderer_font fo
   render_font_info info;
 
   info.atlas_size = {i_font->glyph_data.w, i_font->glyph_data.h};
-  info.ht_entries = i_font->locations.index.size();
+  info.ht_entries = i_font->locations.ht_size();
   info.texture = i_font->glyph_texture;
-  info.cache_entries = i_font->locations.nentries;
+  info.cache_entries = i_font->locations.size();
 
   return info;
 }
@@ -286,7 +182,7 @@ void render_text(app_state *state,
       {
         ZoneScopedN("Lookup Glyph");
         uint64_t key = cp | ((uint64_t)scaled_size << 32);
-        glyph = *lru_cache_find(i_font->locations, key);
+        glyph = *i_font->locations.find_or_insert(key);
       }
 
       glm::vec2 rect_pos = current_pos +
@@ -304,7 +200,7 @@ void render_font_reset(app_state *state, renderer_font font) {
   internal_font *i_font = (internal_font *)font.index;
   render_batch_reset(i_font->batch);
   if (i_font->invalidate) {
-    lru_cache_invalidate(i_font->locations);
+    i_font->locations.clear();
     i_font->glyph_data_offset = {PADDING, PADDING};
     i_font->row_height = 0;
     i_font->invalidate = false;

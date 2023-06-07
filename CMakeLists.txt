@@ -34,6 +34,7 @@ add_library(imgui SHARED
 add_library(space_common SHARED 
   src/renderer/render_batch.cc
   src/renderer/text/render_text.cc
+  src/renderer/text/glyph_builder.cc
   src/renderer/renderer.cc
   src/renderer/render_utils.cc
   src/renderer/render_pass_tonemap.cc

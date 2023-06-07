@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/lru_cache.hh"
 #include "common/win32_export.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
