@@ -4,7 +4,6 @@
 #include "common/debug.hh"
 #include "pyrolib/memory/arena.hh"
 
-
 namespace pyro {
 namespace container {
 
