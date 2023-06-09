@@ -2,7 +2,6 @@
 
 #include "pyrolib/memory/arena.hh"
 #include "pyrolib/memory/heap.hh"
-#include <vcruntime_string.h>
 
 namespace pyro {
 namespace container {

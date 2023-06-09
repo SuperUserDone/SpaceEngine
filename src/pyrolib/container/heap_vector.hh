@@ -1,7 +1,7 @@
 #pragma once
 
 #include "basic_vector.hh"
-#include <corecrt_malloc.h>
+#include <stdlib.h>
 
 namespace pyro {
 namespace container {

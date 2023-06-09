@@ -16,7 +16,7 @@
 #include <iterator>
 #include <stdint.h>
 #include <unordered_map>
-#include <vcruntime_string.h>
+#include <string.h>
 
 template <typename key_type>
 static inline key_type key_copy(key_type in) {

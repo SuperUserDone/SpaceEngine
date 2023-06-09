@@ -3,7 +3,6 @@
 #include "common/debug.hh"
 #include <atomic>
 #include <string.h>
-#include <vcruntime_string.h>
 
 namespace pyro {
 namespace memory {
