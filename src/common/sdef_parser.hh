@@ -24,7 +24,6 @@
 #include "win32_export.hh"
 #include <stdint.h>
 
-
 enum sdef_type {
   SDEF_TYPE_INTEGER,
   SDEF_TYPE_STRING,
