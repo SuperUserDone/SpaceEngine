@@ -1,11 +1,11 @@
 #include "assetmanager/assetmanager.hh"
 #include "backends/imgui_impl_sdl2.h"
 #include "common/debug.hh"
-#include "common/timer.hh"
 #include "data/app_state.hh"
 #include "data/event.hh"
 #include "data/renderer_api.hh"
 #include "imgui.h"
+#include "pyrolib/utils/timer.hh"
 #include "renderer/text/render_text.hh"
 #include "sdl_helpers/events.hh"
 #include "tracy/Tracy.hpp"
@@ -93,10 +93,11 @@ void run_game_loop(app_state *state) {
   state->time.dt = 0;
   state->time.t = 0;
 
-  timer_init_subsystem();
-  precise_timer delta_timer = timer_create();
-  precise_timer time_timer = timer_create();
-  precise_timer tick_timer = timer_create();
+  pyro::utils::timer delta_timer;
+  pyro::utils::timer time_timer;
+
+  delta_timer.lt_init();
+  time_timer.lt_init();
 
   bool debug_ui = false;
   state->tps_target = 60;
@@ -143,10 +144,10 @@ void run_game_loop(app_state *state) {
 
     // Delta time stuff
     {
-      state->time.dt = (double)timer_reset_us(delta_timer) / 1000000.0;
-      state->time.t = (double)timer_get_time_us(time_timer) / 1000000.0;
+      state->time.dt = delta_timer.get_us() / 1000000.0;
+      state->time.t = time_timer.get_us() / 1000000.0;
       if (state->time.t >= 1024) {
-        timer_reset_us(time_timer);
+        time_timer.reset();
       }
 
       TracyPlot("Delta Time", state->time.dt);
@@ -156,15 +157,7 @@ void run_game_loop(app_state *state) {
     // Run game update
     {
       ZoneScopedN("ProcessTicks");
-      int64_t tick = timer_get_time_us(tick_timer);
-      int64_t time_per_tick = 1000000 / state->tps_target;
-
-      while (tick > time_per_tick) {
-        tick -= time_per_tick;
-        timer_reset_us(tick_timer);
-        FrameMarkNamed("Tick");
-        state->api.game.tick(state);
-      }
+      state->api.game.tick(state);
     }
 
     // Render Screen

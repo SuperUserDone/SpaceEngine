@@ -42,7 +42,6 @@ add_library(space_common SHARED
   src/renderer/render_pass_bloom.cc
   src/assetmanager/loader.cc
   src/common/sdef_parser.cc
-  src/common/timer.cc
   src/common/debug.cc
   src/assetmanager/assetmanager.cc
   src/assetmanager/asset_set.cc
