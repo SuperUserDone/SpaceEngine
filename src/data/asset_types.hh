@@ -5,8 +5,8 @@
 // opaque pointers to avoid a _possible_ cache miss when looking up the actual values we need. Might
 // not be neccacary though, I have not benchmarked it
 
-#include <pyrolib/container/array.hh>
 #include <glm/glm.hpp>
+#include <pyrolib/container/array.hh>
 #include <stdint.h>
 
 enum texture_formats {
