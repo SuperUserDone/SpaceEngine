@@ -1,7 +1,7 @@
 #pragma once
 
 // A simple result primitive inspired by rust's result primitive we use std::string here as I want
-// to experiment in bringing some limited features of c++ in, and as we dont care about allocation
+// to experiment in bringing some limited features of stl in, and as we dont care about allocation
 // behavoir in error handlers it should be fine
 
 #include "common/debug.hh"
