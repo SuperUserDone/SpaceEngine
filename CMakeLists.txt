@@ -8,7 +8,6 @@ option(ENABLE_PROFILING "" OFF)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(xxHash CONFIG REQUIRED)
 find_package(harfbuzz CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 
@@ -22,6 +21,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(src imgui extern)
 
 add_subdirectory(src/pyrolib)
+include_directories(src/pyrolib/extern)
 
 add_library(imgui SHARED
   imgui/backends/imgui_impl_opengl3.cpp
@@ -59,7 +59,7 @@ if(${ENABLE_PROFILING})
   set(ADD_LINKS tracy)
 endif()
 
-target_link_libraries(space_common pyro glm::glm xxHash::xxhash imgui Freetype::Freetype harfbuzz::harfbuzz ${ADD_LINKS})
+target_link_libraries(space_common pyro glm::glm imgui Freetype::Freetype harfbuzz::harfbuzz ${ADD_LINKS})
 
 target_compile_definitions(space_common PRIVATE EXPORT_WIN PUBLIC ${ADD_DEFINES})
 target_compile_definitions(imgui PRIVATE "IMGUI_API=__declspec(dllexport)")
