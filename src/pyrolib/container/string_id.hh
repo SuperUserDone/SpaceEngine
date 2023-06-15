@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string.h>
+#include <vcruntime.h>
 #include <vcruntime_string.h>
 #include <xxhash.h>
 
@@ -10,9 +11,12 @@ namespace container {
 class string_id {
 public:
   explicit inline string_id(const char *str, size_t len)
-      : m_str(str), m_hash(XXH3_64bits(str, len)), m_len(len) {
+      : string_id(str, len, XXH3_64bits(str, len)) {
   }
   explicit inline string_id(const char *str) : string_id(str, strlen(str)) {
+  }
+  explicit inline string_id(const char *str, size_t len, size_t hash)
+      : m_str(str), m_len(len), m_hash(hash) {
   }
 
   string_id() {
@@ -34,7 +38,7 @@ public:
     char *new_str = new char[m_len + 1];
     memcpy(new_str, m_str, m_len);
     new_str[m_len] = 0;
-    return string_id(new_str, m_len);
+    return string_id(new_str, m_len, m_hash);
   }
 
   void lt_free() {
