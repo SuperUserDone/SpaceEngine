@@ -7,7 +7,9 @@
 #include "tracy/Tracy.hpp"
 
 #define create_function(name)                                                                      \
-  void asset_##name##_create(app_state *state, const char *id, name##_data *data) {                \
+  void asset_##name##_create(app_state *state,                                                     \
+                             const pyro::container::string_id &id,                                 \
+                             name##_data *data) {                                                  \
     ZoneScopedN("Create " #name);                                                                  \
     asset_##name##_delete(state, id);                                                              \
     renderer_##name t = state->api.renderer.create_##name(data);                                   \
@@ -15,7 +17,9 @@
   }
 
 #define update_function(name)                                                                      \
-  void asset_##name##_update(app_state *state, const char *id, name##_data *data) {                \
+  void asset_##name##_update(app_state *state,                                                     \
+                             const pyro::container::string_id &id,                                 \
+                             name##_data *data) {                                                  \
     ZoneScopedN("Update " #name);                                                                  \
     auto i = state->assets.name##_data.find(id);                                                   \
     if (i != state->assets.name##_data.end()) {                                                    \
@@ -24,7 +28,7 @@
   }
 
 #define delete_function(name)                                                                      \
-  void asset_##name##_delete(app_state *state, const char *id) {                                   \
+  void asset_##name##_delete(app_state *state, const pyro::container::string_id &id) {             \
     ZoneScopedN("Delete " #name);                                                                  \
     auto i = state->assets.name##_data.find(id);                                                   \
     if (i != state->assets.name##_data.end()) {                                                    \
@@ -34,12 +38,13 @@
   }
 
 #define get_function(name)                                                                         \
-  result<renderer_##name> asset_##name##_get_render(app_state *state, const char *id) {            \
+  result<renderer_##name> asset_##name##_get_render(app_state *state,                              \
+                                                    const pyro::container::string_id &id) {        \
     ZoneScopedN("Get " #name);                                                                     \
     auto i = state->assets.name##_data.find(id);                                                   \
     if (i != state->assets.name##_data.end())                                                      \
       return result_ok(i->val);                                                                    \
-    return result_err<renderer_##name>("Could not find " #name " with id %s", id);                 \
+    return result_err<renderer_##name>("Could not find " #name " with id %s", id.string());           \
   }
 
 static void init_default_assets(app_state *state) {
@@ -57,7 +62,7 @@ static void init_default_assets(app_state *state) {
     m.index_count = 6;
     m.vertex_count = 4;
 
-    asset_mesh_create(state, "Quad", &m);
+    asset_mesh_create(state, "Quad"_sid, &m);
   }
 }
 
@@ -98,7 +103,7 @@ create_function(pipeline);
 create_function(mesh);
 create_function(framebuffer);
 
-void asset_font_create(app_state *state, const char *id, font_data *data) {
+void asset_font_create(app_state *state, const pyro::container::string_id &id, font_data *data) {
   ZoneScopedN("Create Font");
   asset_font_delete(state, id);
   renderer_font t = render_font_create(state, data);
@@ -113,7 +118,7 @@ delete_function(pipeline);
 delete_function(mesh);
 delete_function(framebuffer);
 
-void asset_font_delete(app_state *state, const char *id) {
+void asset_font_delete(app_state *state, const pyro::container::string_id &id) {
   ZoneScopedN("Delete Font");
 
   auto i = state->assets.font_data.find(id);

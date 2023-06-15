@@ -9,14 +9,18 @@
 #include "common/debug.hh"
 #include "common/hash.hh"
 #include "pyrolib/container/array.hh"
+#include "pyrolib/container/string_id.hh"
 #include "pyrolib/memory/arena.hh"
 #include "pyrolib/memory/heap.hh"
-#include "pyrolib/utils/compare.hh"
 #include "pyrolib/utils/hash.hh"
 #include <iterator>
 #include <stdint.h>
-#include <unordered_map>
 #include <string.h>
+#include <unordered_map>
+
+
+namespace pyro {
+namespace container {
 
 template <typename key_type>
 static inline key_type key_copy(key_type in) {
@@ -24,12 +28,8 @@ static inline key_type key_copy(key_type in) {
 }
 
 template <>
-inline const char *key_copy<const char *>(const char *in) {
-  size_t key_len = strlen(in);
-  char *key_copy = new char[key_len + 1];
-  strcpy_s(key_copy, key_len + 1, in);
-
-  return key_copy;
+inline string_id key_copy(string_id in) {
+  return in.lt_copy();
 }
 
 template <typename key_type>
@@ -37,17 +37,11 @@ static inline void key_delete(key_type in) {
 }
 
 template <>
-inline void key_delete<const char *>(const char *in) {
-  delete[] in;
+inline void key_delete(string_id in) {
+  in.lt_free();
 }
 
-namespace pyro {
-namespace container {
-
-template <typename key_type,
-          typename val_type,
-          typename hasher = utils::hasher<key_type>,
-          typename comparison = utils::comparison<key_type>>
+template <typename key_type, typename val_type, typename hasher = utils::hasher<key_type>>
 struct hash_table {
 public:
   struct iterator;
@@ -111,7 +105,7 @@ public:
     hash_table_entry entry = {key_copy(key), hash, val, 0, true};
 
     while (m_entries[location].set) {
-      if (m_entries[location].hash == hash && comparison::compare(key, m_entries[location].key)) {
+      if (m_entries[location].hash == hash && key == m_entries[location].key) {
         key_delete(m_entries[location].key);
         m_entries[location] = entry;
 
@@ -142,7 +136,7 @@ public:
     for (size_t cost = 0; m_entries[location].cost >= cost; cost++, location++) {
       location = location % m_entries.size();
 
-      if (m_entries[location].hash == hash && comparison::compare(m_entries[location].key, key)) {
+      if (m_entries[location].hash == hash && m_entries[location].key == key) {
         loc = iterator(&m_entries[location], m_entries.end());
         break;
       }
@@ -166,7 +160,7 @@ public:
         m_entries[pl] = m_entries[loc];
         m_entries[pl].cost--;
       } else {
-        m_entries[pl] = hash_table_entry{0, 0, {}, 0, false};
+        m_entries[pl] = hash_table_entry{key_type(), 0, {}, 0, false};
         m_used_entries--;
         break;
       }
@@ -177,7 +171,7 @@ public:
     for (size_t i = 0; i < m_entries.size(); i++) {
       if (m_entries[i].set) {
         key_delete(m_entries[i].key);
-        m_entries[i] = hash_table_entry{0, 0, {}, 0, false};
+        m_entries[i] = hash_table_entry{key_type(), 0, {}, 0, false};
       }
     }
 
