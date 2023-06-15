@@ -15,12 +15,12 @@ static void bloom_render_downsample(app_state *state) {
     ZoneScopedN("Bloom Downsample Itteration");
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
     glm::vec2 window_smaller = state->game.renderer.bloom_viewports[i + 1];
-    renderer_mesh m = asset_mesh_get_render(state, "Quad");
+    renderer_mesh m = asset_mesh_get_render(state, "Quad"_sid);
 
     renderer_mesh *mp = &m;
 
     state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i + 1]);
-    renderer_pipeline p = asset_pipeline_get_render(state, "bloomds");
+    renderer_pipeline p = asset_pipeline_get_render(state, "bloomds"_sid);
     pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
 
     pipeline_settings_set_uniform(settings, 0, mvp);
@@ -49,12 +49,12 @@ static void bloom_render_upsample(app_state *state) {
     ZoneScopedN("Bloom Upsample Itteration");
     glm::vec2 window = state->game.renderer.bloom_viewports[i];
 
-    renderer_mesh m = asset_mesh_get_render(state, "Quad");
+    renderer_mesh m = asset_mesh_get_render(state, "Quad"_sid);
 
     renderer_mesh *mp = &m;
 
     state->api.renderer.use_framebuffer(state->game.renderer.bloom_buffers[i]);
-    renderer_pipeline p = asset_pipeline_get_render(state, "bloomus");
+    renderer_pipeline p = asset_pipeline_get_render(state, "bloomus"_sid);
 
     pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
 

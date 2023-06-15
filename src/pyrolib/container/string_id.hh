@@ -9,10 +9,10 @@ namespace container {
 
 class string_id {
 public:
-  string_id(const char *str, size_t len)
+  explicit inline string_id(const char *str, size_t len)
       : m_str(str), m_hash(XXH3_64bits(str, len)), m_len(len) {
   }
-  string_id(const char *str) : string_id(str, strlen(str)) {
+  explicit inline string_id(const char *str) : string_id(str, strlen(str)) {
   }
 
   string_id() {

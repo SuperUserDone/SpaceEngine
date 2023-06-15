@@ -234,7 +234,7 @@ void render_font_finish(app_state *state, renderer_font font) {
 
   glm::mat4 mvp = glm::ortho(0.f, area.x, area.y, 0.f, -1.f, 1.f);
 
-  renderer_pipeline p = asset_pipeline_get_render(state, "text");
+  renderer_pipeline p = asset_pipeline_get_render(state, "text"_sid);
 
   pipeline_settings settings = pipeline_settings_create(p, state->frame_arena);
   pipeline_settings_set_uniform(settings, 0, mvp);
