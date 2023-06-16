@@ -43,6 +43,7 @@ add_library(space_common SHARED
   src/assetmanager/loader.cc
   src/common/sdef_parser.cc
   src/common/debug.cc
+  src/input/input.cc
   src/assetmanager/assetmanager.cc
   src/assetmanager/asset_set.cc
   src/memory/memory_scratch_arena.cc)

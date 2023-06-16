@@ -3,6 +3,7 @@
 #include "asset_storage.hh"
 #include "data/game_api.hh"
 #include "game_state.hh"
+#include "input/input.hh"
 #include "renderer_api.hh"
 
 struct render_text_state;
@@ -13,6 +14,8 @@ struct app_state {
 
   pyro::memory::arena permanent_arena;
   pyro::memory::arena frame_arena;
+
+  input::raw_input_state raw_input;
 
   void *renderer_state;
   void *platform_state;

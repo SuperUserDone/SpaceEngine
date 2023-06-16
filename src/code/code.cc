@@ -1,6 +1,7 @@
 #include "assetmanager/assetmanager.hh"
 #include "assetmanager/loader.hh"
 #include "data/asset_types.hh"
+#include "input/input.hh"
 #include "renderer/renderer.hh"
 #include "renderer/text/render_text.hh"
 #include <imgui.h>
@@ -90,6 +91,8 @@ void draw_debug_info(app_state *state) {
       ImGui::Text("%s\n", i.key);
     }*/
   }
+
+  input::debug_ui(state);
 
   ImGui::End();
 }

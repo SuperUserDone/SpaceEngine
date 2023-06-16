@@ -5,9 +5,11 @@
 #include "data/event.hh"
 #include "data/renderer_api.hh"
 #include "imgui.h"
+#include "input/input.hh"
 #include "pyrolib/utils/timer.hh"
 #include "renderer/text/render_text.hh"
 #include "sdl_helpers/events.hh"
+#include "sdl_helpers/sdl_read_input.hh"
 #include "tracy/Tracy.hpp"
 #include "win32/win32_data.hh"
 
@@ -103,7 +105,8 @@ void run_game_loop(app_state *state) {
   state->tps_target = 60;
 
   while (state->running) {
-    ZoneScopedN("Render");
+    ZoneScopedN("MainLoop");
+    input::reset(state);
 
     // Setup
     {
@@ -117,6 +120,7 @@ void run_game_loop(app_state *state) {
       SDL_Event e;
       while (SDL_PollEvent(&e)) {
         ImGui_ImplSDL2_ProcessEvent(&e);
+        sdl_process_input_event(state, e);
 
         event translated = convert_sdl_event(e, ws->window);
 
@@ -157,6 +161,7 @@ void run_game_loop(app_state *state) {
     // Run game update
     {
       ZoneScopedN("ProcessTicks");
+      sdl_read_input(state);
       state->api.game.tick(state);
     }
 
