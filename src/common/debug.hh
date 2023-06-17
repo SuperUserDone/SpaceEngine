@@ -5,8 +5,8 @@
 // TODO Cleanup as this architecture is a MESS.
 
 #include "common/win32_export.hh"
-#include "stdlib.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 typedef void (*platform_error_func)(const char *msg, bool die);
 
@@ -18,7 +18,7 @@ APIFUNC extern platform_error_func platform_err;
     needed++;                                                                                      \
     char *buffer = (char *)malloc(needed);                                                         \
     sprintf_s(buffer, needed, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);            \
-    platform_err(buffer, true);                                                                    \
+    /*platform_err(buffer, true);*/                                                                \
   }
 
 #define SPACE_ASSERT_NODIE(expr, fmt, ...)                                                         \
@@ -27,5 +27,5 @@ APIFUNC extern platform_error_func platform_err;
     needed++;                                                                                      \
     char *buffer = (char *)malloc(needed);                                                         \
     sprintf_s(buffer, needed, "Assert (" #expr ") failed! Message: " fmt, __VA_ARGS__);            \
-    platform_err(buffer, false);                                                                   \
+    /*platform_err(buffer, false); */                                                             \
   }

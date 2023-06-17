@@ -26,27 +26,28 @@ include_directories(src/pyrolib/extern)
 add_library(imgui SHARED
   imgui/backends/imgui_impl_opengl3.cpp
   imgui/imgui.cpp
-  imgui/imgui_draw.cpp
   imgui/imgui_demo.cpp
+  imgui/imgui_draw.cpp
   imgui/imgui_tables.cpp
-  imgui/imgui_widgets.cpp)
+  imgui/imgui_widgets.cpp
+  )
 
 add_library(space_common SHARED 
-  src/renderer/render_batch.cc
-  src/renderer/text/render_text.cc
-  src/renderer/text/glyph_builder.cc
-  src/renderer/renderer.cc
-  src/renderer/render_utils.cc
-  src/renderer/render_pass_tonemap.cc
-  src/renderer/render_pass_geometry.cc
-  src/renderer/render_pass_bloom.cc
-  src/assetmanager/loader.cc
-  src/common/sdef_parser.cc
-  src/common/debug.cc
-  src/input/input.cc
-  src/assetmanager/assetmanager.cc
   src/assetmanager/asset_set.cc
-  src/memory/memory_scratch_arena.cc)
+  src/assetmanager/assetmanager.cc
+  src/assetmanager/loader.cc
+  src/common/debug.cc
+  src/common/sdef_parser.cc
+  src/input/input.cc
+  src/renderer/render_batch.cc
+  src/renderer/render_pass_bloom.cc
+  src/renderer/render_pass_geometry.cc
+  src/renderer/render_pass_tonemap.cc
+  src/renderer/render_utils.cc
+  src/renderer/renderer.cc
+  src/renderer/text/glyph_builder.cc
+  src/renderer/text/render_text.cc
+  )
 
 add_library(space_opengl SHARED src/opengl/renderer.cc)
 add_library(space_code SHARED src/code/code.cc)

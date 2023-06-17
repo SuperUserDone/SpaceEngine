@@ -12,7 +12,7 @@ static inline void sdl_read_input(app_state *state) {
   // Keyboard
   const uint8_t *keys = SDL_GetKeyboardState(nullptr);
   // Should be optimized to a memset or a SIMD copy we dont realy care as we trust the compiler
-  // should do a proper job.
+  // should do a proper job. Clang seems to be doing a good job at -O3 with simd.
   for (size_t i = 0; i < input::keyboard::key::COUNT; i++) {
     state->raw_input.mouse_keyboard.keys[i] = keys[i];
   }

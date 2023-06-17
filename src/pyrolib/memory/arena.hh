@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/debug.hh"
+#include "pyrolib/utils/api.hh"
 #include <atomic>
 #include <string.h>
 
@@ -26,7 +27,7 @@ struct arena_state {
   size_t pos;
 };
 
-class arena {
+class PYROAPI arena {
 public:
   void lt_init(size_t max_size = DEFAULT_ARENA_MAX_SIZE);
   void lt_done();

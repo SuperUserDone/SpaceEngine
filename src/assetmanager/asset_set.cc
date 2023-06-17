@@ -5,7 +5,7 @@
 #include "common/result.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
-#include "memory/memory_scratch_arena.hh"
+#include "pyrolib/memory/scratch_arena.hh"
 
 #include <string>
 #include <unordered_map>
@@ -211,7 +211,8 @@ result<> parse_pipeline(pyro::memory::arena &arena,
                                    uniform_defined,
                                    block.properties[i]));
 
-      char *uniforms_info = arena.push_cstring(block.properties[i].string_array, block.properties[i].total_len);
+      char *uniforms_info =
+          arena.push_cstring(block.properties[i].string_array, block.properties[i].total_len);
 
       size_t j = 0;
 
@@ -220,7 +221,7 @@ result<> parse_pipeline(pyro::memory::arena &arena,
 
       while (j < block.properties[i].total_len) {
         size_t len = strlen(&uniforms_info[j]);
-        arena.push<char*>();
+        arena.push<char *>();
         descriptor.pipeline.uniforms[descriptor.pipeline.uniforms_count++] = &uniforms_info[j];
         j += len + 1;
       }
@@ -279,7 +280,7 @@ result<> parse_font(pyro::memory::arena &arena,
 }
 
 result<asset_set> asset_set_load_from_file(pyro::memory::arena &arena, const char *filename) {
-  mem_scratch_arena scratch = arena_scratch_get();
+  pyro::memory::scratch_arena scratch = pyro::memory::scratch_get();
   const char *file_content = load_file(scratch, filename);
   result_forward_err(dom, sdef_parse(scratch, file_content, strlen(file_content)));
 
@@ -312,6 +313,6 @@ result<asset_set> asset_set_load_from_file(pyro::memory::arena &arena, const cha
     }
   }
 
-  arena_scratch_free(scratch);
+  pyro::memory::scratch_free(scratch);
   return result_ok(s);
 }

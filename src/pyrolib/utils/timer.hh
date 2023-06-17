@@ -1,10 +1,12 @@
 #pragma once
 
+#include "api.hh"
 #include <stdint.h>
+
 namespace pyro {
 namespace utils {
 
-class timer {
+class PYROAPI timer {
 public:
   void lt_init();
   void lt_free();
@@ -16,7 +18,5 @@ private:
   int64_t m_start;
 };
 
-
-
-}
-}
+} // namespace utils
+} // namespace pyro

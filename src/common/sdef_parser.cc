@@ -1,7 +1,7 @@
 #include "common/sdef_parser.hh"
 #include "common/result.hh"
-#include "memory/memory_scratch_arena.hh"
 
+#include <pyrolib/memory/scratch_arena.hh>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -383,13 +383,13 @@ static inline result<sdef_dom *> parse_file(pyro::memory::arena &arena,
 
 result<sdef_dom *> sdef_parse(pyro::memory::arena &arena, const char *str, size_t len) {
   size_t token_count = 0;
-  mem_scratch_arena temp_arena = arena_scratch_get();
+  pyro::memory::scratch_arena temp_arena = pyro::memory::scratch_get();
 
   token *tokens = get_tokens(temp_arena, str, len, token_count);
 
   result<sdef_dom *> dom = parse_file(arena, tokens, token_count);
 
-  arena_scratch_free(temp_arena);
+  pyro::memory::scratch_free(temp_arena);
 
   return dom;
 }

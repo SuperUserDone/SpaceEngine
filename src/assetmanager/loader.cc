@@ -6,7 +6,7 @@
 #include "common/hash.hh"
 #include "common/result.hh"
 #include "data/asset_storage.hh"
-#include "memory/memory_scratch_arena.hh"
+#include "pyrolib/memory/scratch_arena.hh"
 #include "tracy/Tracy.hpp"
 #include <pyrolib/memory/arena.hh>
 #include <thread>
@@ -185,7 +185,7 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
 
 result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
   ZoneScopedN("Load file Sync");
-  mem_scratch_arena arena = arena_scratch_get();
+  pyro::memory::scratch_arena arena = pyro::memory::scratch_get();
 
   result_forward_err(set, asset_set_load_from_file(arena, filename));
 
@@ -193,7 +193,7 @@ result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
 
   result_forward_err(_, asset_loader_upload_to_vram(state, res));
 
-  arena_scratch_free(arena);
+  pyro::memory::scratch_free(arena);
 
   return result_ok(true);
 }
