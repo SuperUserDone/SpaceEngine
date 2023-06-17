@@ -7,7 +7,7 @@ namespace threading {
 
 class spinlock {
 public:
-  spinlock() : m_flag(true) {
+  spinlock() : m_flag(false) {
   }
   void lock() noexcept {
     for (;;) {
