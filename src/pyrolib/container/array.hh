@@ -32,13 +32,13 @@ public:
 
   void lt_copy(memory::arena &arena, const array<T> &arr) {
     lt_init(arena, arr.size());
-    memcpy(m_size, &arr[0], arr.size() * sizeof(T));
+    memcpy(m_base, &arr[0], arr.size() * sizeof(T));
   }
 
   template <typename U>
   void lt_copy_from(memory::arena &arena, const U &other) {
     lt_init(arena, other.size());
-    memcpy(m_size, &other[0], other.size() * sizeof(T));
+    memcpy(m_base, &other[0], other.size() * sizeof(T));
   }
 
   typedef T *iterator;
