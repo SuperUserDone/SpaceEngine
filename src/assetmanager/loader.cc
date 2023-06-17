@@ -6,7 +6,9 @@
 #include "common/hash.hh"
 #include "common/result.hh"
 #include "data/asset_storage.hh"
+#include "pyrolib/log/log.hh"
 #include "pyrolib/memory/scratch_arena.hh"
+#include "pyrolib/utils/timer.hh"
 #include "tracy/Tracy.hpp"
 #include <pyrolib/memory/arena.hh>
 #include <thread>
@@ -16,6 +18,7 @@
 
 result<asset_data> loader_load_texture(pyro::memory::arena &arena, const asset_descriptor &desc) {
   ZoneScopedN("Texture Load");
+  PYRO_LOGI("Loading texture %s(%s)", desc.name, desc.texture.file_path);
 
   int x, y, c;
   void *data = stbi_load(desc.texture.file_path, &x, &y, &c, 0);
@@ -58,6 +61,8 @@ result<asset_data> loader_load_texture(pyro::memory::arena &arena, const asset_d
 
 result<asset_data> loader_load_pipeline(pyro::memory::arena &arena, const asset_descriptor &desc) {
   ZoneScopedN("Pipeline Load");
+  PYRO_LOGI("Loading pipeline %s", desc.name);
+
   asset_data a;
   a.type = ASSET_TYPE_PIPELINE;
   a.pipeline.uniform_count = desc.pipeline.uniforms_count;
@@ -70,7 +75,8 @@ result<asset_data> loader_load_pipeline(pyro::memory::arena &arena, const asset_
 }
 
 result<asset_data> loader_load_font(pyro::memory::arena &arena, const asset_descriptor &desc) {
-  ZoneScopedN("Pipeline Load");
+  ZoneScopedN("Font Load");
+  PYRO_LOGI("Loading font %s(%s)", desc.name, desc.font.path);
   asset_data a;
 
   a.type = ASSET_TYPE_FONT;
@@ -136,7 +142,8 @@ async_load_result *asset_loader_load_async(pyro::memory::arena &arena,
         std::min(std::max((int)hw_threads - 2, (int)1), MAX_NUM_LOADER_THREADS);
 
     for (int i = 0; i < res->loader_thread_count; i++) {
-      new(&res->loader_threads[i]) std::thread(process_thread, std::ref(arena), std::cref(set), res);
+      new (&res->loader_threads[i])
+          std::thread(process_thread, std::ref(arena), std::cref(set), res);
     }
 
     return res;
@@ -161,19 +168,27 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
     }
   }
 
+  PYRO_LOGI("Finishing up");
+
   if (result->has_error)
     return result_err(result->error.c_str());
 
   for (int i = 0; i < result->count; i++) {
     switch (result->result.set[i].type) {
     case ASSET_TYPE_TEXTURE:
-      asset_texture_create(state, pyro::container::string_id(result->result.set[i].name), &result->result.set[i].texture);
+      asset_texture_create(state,
+                           pyro::container::string_id(result->result.set[i].name),
+                           &result->result.set[i].texture);
       break;
     case ASSET_TYPE_PIPELINE:
-      asset_pipeline_create(state, pyro::container::string_id(result->result.set[i].name), &result->result.set[i].pipeline);
+      asset_pipeline_create(state,
+                            pyro::container::string_id(result->result.set[i].name),
+                            &result->result.set[i].pipeline);
       break;
     case ASSET_TYPE_FONT:
-      asset_font_create(state, pyro::container::string_id(result->result.set[i].name), &result->result.set[i].font);
+      asset_font_create(state,
+                        pyro::container::string_id(result->result.set[i].name),
+                        &result->result.set[i].font);
       break;
     default:
       return result_err("Unknown asset type");
@@ -185,6 +200,11 @@ result<> asset_loader_upload_to_vram(app_state *state, async_load_result *result
 
 result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
   ZoneScopedN("Load file Sync");
+
+  pyro::utils::timer load_timer;
+  load_timer.lt_init();
+
+  PYRO_LOGI("Loading asset file set %s", filename);
   pyro::memory::scratch_arena arena = pyro::memory::scratch_get();
 
   result_forward_err(set, asset_set_load_from_file(arena, filename));
@@ -195,6 +215,7 @@ result<> asset_loader_load_file_sync(app_state *state, const char *filename) {
 
   pyro::memory::scratch_free(arena);
 
+  PYRO_LOGI("Loading asset file set %s took %d ms", filename, load_timer.get_us() / 1000);
   return result_ok(true);
 }
 
@@ -202,6 +223,8 @@ result<async_load_result *> asset_loader_load_file_async(pyro::memory::arena &ar
                                                          app_state *state,
                                                          const char *filename) {
   ZoneScopedN("Load file Async start");
+
+  PYRO_LOGI("Begin loading %s asynchoronously.", filename);
   result_forward_err(set, asset_set_load_from_file(arena, filename));
   async_load_result *res = asset_loader_load_async(arena, state, set);
 

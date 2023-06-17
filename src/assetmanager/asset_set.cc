@@ -5,6 +5,7 @@
 #include "common/result.hh"
 #include "common/sdef_parser.hh"
 #include "data/asset_storage.hh"
+#include "pyrolib/log/log.hh"
 #include "pyrolib/memory/scratch_arena.hh"
 
 #include <string>
@@ -280,6 +281,7 @@ result<> parse_font(pyro::memory::arena &arena,
 }
 
 result<asset_set> asset_set_load_from_file(pyro::memory::arena &arena, const char *filename) {
+  PYRO_LOGI("Parsing %s", filename);
   pyro::memory::scratch_arena scratch = pyro::memory::scratch_get();
   const char *file_content = load_file(scratch, filename);
   result_forward_err(dom, sdef_parse(scratch, file_content, strlen(file_content)));
