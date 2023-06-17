@@ -16,6 +16,7 @@
 #include <SDL_hints.h>
 #include <SDL_timer.h>
 #include <SDL_video.h>
+#include <pyrolib/log/log.hh>
 #include <stdio.h>
 #include <windows.h>
 
@@ -296,6 +297,9 @@ void hotreload_renderer(app_state *state) {
 }
 
 int main(int argc, char *argv[]) {
+  pyro::log::init();
+  PYRO_LOGI("Test");
+
   app_state state;
 
   {
@@ -342,5 +346,6 @@ int main(int argc, char *argv[]) {
   free_renderer(&state);
   SDL_Quit();
 
+  pyro::log::done();
   return 0;
 }
