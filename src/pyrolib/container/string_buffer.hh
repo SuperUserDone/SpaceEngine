@@ -35,6 +35,10 @@ public:
     return true;
   }
 
+  bool write(const container::array<char> &str) {
+    return write(&str[0], str.size() - 1);
+  }
+
   const char *read_all(memory::arena &arena) {
     m_lock.lock();
     array<char> out;
