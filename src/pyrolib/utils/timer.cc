@@ -21,7 +21,7 @@ void timer::lt_init() {
   m_start = st.QuadPart;
 }
 
-void timer::lt_free() {
+void timer::lt_done() {
 }
 
 int64_t timer::get_us() {

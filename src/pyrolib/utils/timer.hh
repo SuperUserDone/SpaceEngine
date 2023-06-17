@@ -9,7 +9,7 @@ namespace utils {
 class PYROAPI timer {
 public:
   void lt_init();
-  void lt_free();
+  void lt_done();
 
   int64_t get_us();
   int64_t reset();
