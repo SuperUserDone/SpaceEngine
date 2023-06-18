@@ -1,6 +1,6 @@
 #include "assetmanager/assetmanager.hh"
 #include "backends/imgui_impl_sdl2.h"
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 #include "data/app_state.hh"
 #include "data/event.hh"
 #include "data/renderer_api.hh"
@@ -276,7 +276,7 @@ void load_renderer(app_state *state) {
 
   ((fetch_api_fun)GetProcAddress(ws->renderer, "fetch_api"))(state);
 
-  SPACE_ASSERT(state->api.renderer.init(state, (load_proc)SDL_GL_GetProcAddress),
+  PYRO_ASSERT(state->api.renderer.init(state, (load_proc)SDL_GL_GetProcAddress),
                "Failed to load renderer!");
 
   asset_system_init(state);
@@ -304,7 +304,6 @@ int main(int argc, char *argv[]) {
 
   {
     ZoneScopedN("Init");
-    platform_err = win32_err;
 
     state.permanent_arena.lt_init();
     state.platform_state = state.permanent_arena.push<win32_state>();

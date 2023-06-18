@@ -1,6 +1,6 @@
 #include "render_text.hh"
 #include "assetmanager/assetmanager.hh"
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
@@ -34,7 +34,7 @@ void init_ft(app_state *state) {
 
   FT_Error ft_error;
 
-  SPACE_ASSERT(!(ft_error = FT_Init_FreeType(&info->ft_lib)), "Could not init freetype!");
+  PYRO_ASSERT(!(ft_error = FT_Init_FreeType(&info->ft_lib)), "Could not init freetype!");
 }
 
 void quit_ft(app_state *state) {
@@ -51,7 +51,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   i_font->font_face_data = new uint8_t[data->file_len];
   memcpy(i_font->font_face_data, data->file_data, data->file_len);
 
-  SPACE_ASSERT(!FT_New_Memory_Face(info->ft_lib,
+  PYRO_ASSERT(!FT_New_Memory_Face(info->ft_lib,
                                    (FT_Byte *)i_font->font_face_data,
                                    data->file_len,
                                    0,
@@ -122,7 +122,7 @@ void render_text(app_state *state,
                  const char *text) {
   ZoneScopedN("Queue Draw Text");
 
-  SPACE_ASSERT(size >= FONT_SIZE_MIN && size <= FONT_SIZE_MAX,
+  PYRO_ASSERT(size >= FONT_SIZE_MIN && size <= FONT_SIZE_MAX,
                "Font size must be between %d and %d!",
                FONT_SIZE_MIN,
                FONT_SIZE_MAX);

@@ -34,7 +34,7 @@ void arena::lt_init(size_t max_size) {
   // We reserve the page, but dont allocate it yet. Dont allow execution
   m_base = VirtualAlloc(nullptr, m_max_size, MEM_RESERVE, PAGE_NOACCESS);
 
-  SPACE_ASSERT(m_base, "Could not allocate space for arena!");
+  PYRO_ASSERT(m_base, "Could not allocate space for arena!");
 
   // Allocate the first page as a optimization. Will grow the arena if more space is requested
   grow(page_size);
@@ -55,20 +55,20 @@ void arena::grow(size_t min_size) {
   // Might be a bug here, should be a compare and exchange? Maybe we can force ordering with a flag?
   m_grow_semaphore.store(true);
 
-  SPACE_ASSERT(alloc <= m_max_size, "Tried to grow arena beyond its capacity!");
+  PYRO_ASSERT(alloc <= m_max_size, "Tried to grow arena beyond its capacity!");
 
   // Now we can commit the already reserved memory MAKE SURE IT IS RW NOT RWX
   void *a = VirtualAlloc(m_base, alloc, MEM_COMMIT, PAGE_READWRITE);
 
   m_allocated_size = alloc;
 
-  SPACE_ASSERT(a, "Failed to commit arena memory!")
+  PYRO_ASSERT(a, "Failed to commit arena memory!")
 
   m_grow_semaphore.store(false);
 }
 
 void arena::lt_done() {
-  SPACE_ASSERT(VirtualFree(m_base, 0, MEM_RELEASE), "Failed to free arena memory!");
+  PYRO_ASSERT(VirtualFree(m_base, 0, MEM_RELEASE), "Failed to free arena memory!");
 
   m_base = nullptr;
   m_size = 0;

@@ -1,5 +1,5 @@
 #include "scratch_arena.hh"
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 
 namespace pyro {
 namespace memory {
@@ -17,7 +17,7 @@ scratch_arena scratch_get() {
   }
 
   // Ensure an arena exists with the required size
-  SPACE_ASSERT(index < MAX_SCRATCH_STACKS,
+  PYRO_ASSERT(index < MAX_SCRATCH_STACKS,
                "Attempt to get more handles to scratch arenas than allowed (%d)",
                MAX_SCRATCH_STACKS);
   scratch_arena a = {arenas[index], index};
@@ -27,10 +27,10 @@ scratch_arena scratch_get() {
 }
 
 void scratch_free(scratch_arena &arena) {
-  SPACE_ASSERT(index > 0, "Tried to free an scratch arena without one being allocated!");
+  PYRO_ASSERT(index > 0, "Tried to free an scratch arena without one being allocated!");
 
   index--;
-  SPACE_ASSERT(index == arena.index,
+  PYRO_ASSERT(index == arena.index,
                "Attempting to free a scratch buffer allocated before another index = %llu and "
                "arena.index = %llu",
                index,

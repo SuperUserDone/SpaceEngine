@@ -39,6 +39,10 @@ public:
     return write(&str[0], str.size() - 1);
   }
 
+  bool write(const char *str) {
+    return write(str, strlen(str));
+  }
+
   const char *read_all(memory::arena &arena) {
     m_lock.lock();
     array<char> out;

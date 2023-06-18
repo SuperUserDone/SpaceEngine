@@ -1,6 +1,7 @@
 #pragma once
 
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
+#include "pyrolib/log/log.hh"
 #include "pyrolib/utils/api.hh"
 #include <atomic>
 #include <string.h>
@@ -34,7 +35,7 @@ public:
   void grow(size_t min_size);
 
   void pop(size_t size) {
-    SPACE_ASSERT(size < m_size, "Trying to free more space in arena than available!");
+    PYRO_ASSERT(size < m_size, "Trying to free more space in arena than available!");
     m_size.fetch_add(-size);
   }
 
@@ -45,7 +46,7 @@ public:
 
   template <arena_push_flags flags = arena_push_flags::none>
   void *push(size_t size) {
-    SPACE_ASSERT(m_base, "Arena base is null! Cannot allocate to null arena!");
+    PYRO_ASSERT(m_base, "Arena base is null! Cannot allocate to null arena!");
 
     // Mark the memory as used
     size_t old_size = m_size.fetch_add(size);

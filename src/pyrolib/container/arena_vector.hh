@@ -1,7 +1,7 @@
 #pragma once
 
 #include "basic_vector.hh"
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 #include "pyrolib/memory/arena.hh"
 
 namespace pyro {
@@ -29,7 +29,7 @@ public:
   }
 
   void pop_back() {
-    SPACE_ASSERT(this->m_size > 0, "Cannot free element when no elements exist!");
+    PYRO_ASSERT(this->m_size > 0, "Cannot free element when no elements exist!");
     this->m_size--;
   }
 

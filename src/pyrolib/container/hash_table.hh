@@ -6,7 +6,7 @@
 // a better resource to understand the basic working of the implementation
 // https://dspace.mit.edu/bitstream/handle/1721.1/130693/1251799942-MIT.pdf)
 
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 #include "common/hash.hh"
 #include "pyrolib/container/array.hh"
 #include "pyrolib/container/string_id.hh"
@@ -70,8 +70,8 @@ public:
   }
 
   void resize(size_t size) {
-    SPACE_ASSERT(m_growable, "Cannot resize non-heap allocated hash table!");
-    SPACE_ASSERT(size > m_used_entries,
+    PYRO_ASSERT(m_growable, "Cannot resize non-heap allocated hash table!");
+    PYRO_ASSERT(size > m_used_entries,
                  "Hash table cannot be resized to a size where all elements wont fit! %llu > %llu",
                  m_used_entries,
                  size);

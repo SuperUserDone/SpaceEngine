@@ -36,7 +36,6 @@ add_library(space_common SHARED
   src/assetmanager/asset_set.cc
   src/assetmanager/assetmanager.cc
   src/assetmanager/loader.cc
-  src/common/debug.cc
   src/common/sdef_parser.cc
   src/input/input.cc
   src/renderer/render_batch.cc

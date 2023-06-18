@@ -1,11 +1,12 @@
 #pragma once
 
-#include "common/debug.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "glad/gl.h"
 #include "opengl/renderer_state.hh"
+#include "pyrolib/log/assert.hh"
 #include "tracy/Tracy.hpp"
+
 
 static inline renderer_pipeline create_pipeline(pipeline_data *data) {
   ZoneScopedN("Create Pipeline");
@@ -32,7 +33,7 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
     if (!success) {
       glGetShaderInfoLog(vertex, 512, NULL, infoLog);
-      SPACE_ASSERT_NODIE(false, "Vertex shader compile failed %s", infoLog);
+      PYRO_LOGE("Vertex shader compile failed %s", infoLog);
     }
 
     glCompileShader(fragment);
@@ -41,7 +42,7 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
 
     if (!success) {
       glGetShaderInfoLog(fragment, 512, NULL, infoLog);
-      SPACE_ASSERT_NODIE(false, "Fragment shader compile failed %s", infoLog);
+      PYRO_LOGE("Fragment shader compile failed %s", infoLog);
     }
   }
 
@@ -59,7 +60,7 @@ static inline renderer_pipeline create_pipeline(pipeline_data *data) {
     if (!success) {
       glGetShaderInfoLog(vertex, 512, NULL, infoLog);
 
-      SPACE_ASSERT_NODIE(false, "Shader Link failed %s", infoLog);
+      PYRO_LOGE("Shader Link failed %s", infoLog);
     }
   }
 

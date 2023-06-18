@@ -4,7 +4,7 @@
 // to experiment in bringing some limited features of stl in, and as we dont care about allocation
 // behavoir in error handlers it should be fine
 
-#include "common/debug.hh"
+#include <pyrolib/log/assert.hh>
 #include <stdio.h>
 #include <string.h>
 #include <string>
@@ -32,16 +32,13 @@ struct result {
   }
 
   T get() {
-    SPACE_ASSERT(type == RESULT_OK,
+    PYRO_ASSERT(type == RESULT_OK,
                  "Attempt to read value from error result. Message: %s",
                  error.c_str());
     return value;
   };
 
   T get_no_err() {
-    SPACE_ASSERT_NODIE(type == RESULT_OK,
-                       "Attempt to read value from error result. Message: %s",
-                       error.c_str());
     return value;
   }
 
@@ -49,7 +46,7 @@ struct result {
   template <typename K>
   result(result<K> &res) {
     this->type = res.type;
-    SPACE_ASSERT(!res.ok(), "Copying an error from an result with no error");
+    PYRO_ASSERT(!res.ok(), "Copying an error from an result with no error");
     this->error = res.error;
   }
 

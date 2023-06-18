@@ -3,7 +3,7 @@
 // Simple utils to help the user to assign uniforms a bit safer than setting them with arrays. It
 // does simple type checking too
 
-#include "common/debug.hh"
+#include "pyrolib/log/assert.hh"
 #include "data/asset_types.hh"
 #include <glm/glm.hpp>
 #include <pyrolib/container/array.hh>
@@ -58,12 +58,12 @@ static inline pipeline_settings pipeline_settings_create(renderer_pipeline p,
 };
 
 static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t index, float val) {
-  SPACE_ASSERT(
+  PYRO_ASSERT(
       s.current_pos < s.uniforms.size(),
       "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to %f!",
       index,
       val);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -74,12 +74,12 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t in
 }
 
 static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t index, int32_t val) {
-  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
+  PYRO_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting integer "
                "%llu to %d!",
                index,
                val);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -92,12 +92,12 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s, size_t in
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  renderer_texture val) {
-  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
+  PYRO_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting texture "
                "%llu to %d!",
                index,
                val.index);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -110,13 +110,13 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec2 val) {
-  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
+  PYRO_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting vec2 %llu "
                "to {%f, %f}!",
                index,
                val.x,
                val.y);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -129,14 +129,14 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec3 val) {
-  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
+  PYRO_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting vec3 %llu "
                "to {%f, %f, %f}!",
                index,
                val.x,
                val.y,
                val.z);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -149,7 +149,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::vec4 val) {
-  SPACE_ASSERT(s.current_pos < s.uniforms.size(),
+  PYRO_ASSERT(s.current_pos < s.uniforms.size(),
                "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to "
                "{%f, %f, %f, %f}!",
                index,
@@ -157,7 +157,7 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                val.y,
                val.z,
                val.w);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;
@@ -170,11 +170,11 @@ static inline void pipeline_settings_set_uniform(pipeline_settings &s,
 static inline void pipeline_settings_set_uniform(pipeline_settings &s,
                                                  size_t index,
                                                  glm::mat4 val) {
-  SPACE_ASSERT(
+  PYRO_ASSERT(
       s.current_pos < s.uniforms.size(),
       "Trying to assign more uniforms than exists to pipeline settings! Setting %llu to matrix!",
       index);
-  SPACE_ASSERT(!s.index_assigned[s.current_pos],
+  PYRO_ASSERT(!s.index_assigned[s.current_pos],
                "Assigning to uniform varible that was already assigned to!");
 
   s.index_assigned[s.current_pos] = true;

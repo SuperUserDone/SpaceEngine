@@ -1,4 +1,6 @@
 #include "log.hh"
+#include "pyrolib/memory/scratch_arena.hh"
+#include "pyrolib/container/string_buffer.hh"
 
 #include <filesystem>
 
@@ -20,7 +22,9 @@ void init() {
   g_log_buf.lt_init(heap);
 
   if (std::filesystem::exists("log.txt")) {
-    std::filesystem::copy("log.txt", "log.old.txt", std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy("log.txt",
+                          "log.old.txt",
+                          std::filesystem::copy_options::overwrite_existing);
   }
 
   fopen_s(&fp, "log.txt", "w");
@@ -33,11 +37,21 @@ void done() {
   fclose(fp);
 }
 
-void write(const container::array<char> &str) {
+void write(const char *str) {
   if (!g_log_buf.write(str)) {
     buf_flush();
     g_log_buf.write(str);
   }
+}
+
+PYROAPI char *temp_alloc(size_t len) {
+  memory::scratch_arena a = memory::scratch_get();
+
+  container::array<char> str;
+  str.lt_init(a, len + 1);
+
+  memory::scratch_free(a);
+  return &str[0];
 }
 
 } // namespace log
