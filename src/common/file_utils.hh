@@ -15,14 +15,17 @@ static inline char *load_file(pyro::memory::arena &arena,
   size_t read;
 
   fopen_s(&fp, path, mode);
+  if (!fp) {
+    PYRO_LOGE("Could not open %s", path)
+    return nullptr;
+  }
 
   fseek(fp, 0, SEEK_END);
   len = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-
   pyro::container::array<char> buf;
-  buf.lt_init(arena, len+1);
+  buf.lt_init(arena, len + 1);
   read = fread(&buf[0], 1, len, fp);
   buf[read] = '\0';
 
@@ -38,6 +41,7 @@ static inline void *load_binary_file(pyro::memory::arena &arena,
   size_t read;
 
   fopen_s(&fp, path, mode);
+  PYRO_ASSERT(fp, "Could not open %s", path);
 
   fseek(fp, 0, SEEK_END);
   len = ftell(fp);
