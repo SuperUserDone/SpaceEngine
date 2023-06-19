@@ -35,8 +35,8 @@ void render_pass_geometry(app_state *state) {
   glm::vec3 cc = state->game.renderer.clear_color;
   state->api.renderer.clear(cc.x, cc.y, cc.z, 1.0);
 
-  draw_star(state,
+  /*draw_star(state,
             state->game.solar_system->star.pos,
             state->game.solar_system->star.raduis,
-            state->game.solar_system->star.color);
+            state->game.solar_system->star.color);*/
 }

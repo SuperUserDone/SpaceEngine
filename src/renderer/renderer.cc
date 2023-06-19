@@ -18,7 +18,7 @@ void render_resize(app_state *state, int x, int y) {
 void render_calculate_camera(app_state *state) {
   glm::vec2 area = {(float)state->window_area.w, (float)state->window_area.h};
   area /= state->window_area.dpi_scaling;
-  area /= (state->game.camera.zoom * 100.f);
+  //area /= (state->game.camera.zoom * 100.f);
 
   state->game.renderer.camp = glm::ortho(-area.x, area.x, area.y, -area.y, -1.f, 1.f);
   state->game.renderer.camv =

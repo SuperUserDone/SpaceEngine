@@ -14,24 +14,20 @@ void load_assets(app_state *state) {
 
 void init(app_state *state) {
   state->game.camera.pos = {0, 0};
-  state->game.camera.zoom = 0.1f;
+  state->game.camera.zoom = 1.f;
 
   state->game.renderer.bloom_params = {1.f, 0.9f, 0.2f, 2.5f};
   state->game.renderer.bloom_size = 0.001f;
 
-  state->game.solar_system = state->permanent_arena.push<solar_system>();
+  /*state->game.solar_system = state->permanent_arena.push<solar_system>();
   state->game.solar_system->star.color = {255.f / 255.f, 113.f / 255.f, 0.f / 255.f};
   state->game.solar_system->star.pos = {0.f, 0.f};
-  state->game.solar_system->star.raduis = 10.f;
+  state->game.solar_system->star.raduis = 10.f;*/
 
   state->game.renderer.clear_color = glm::vec3(0.05, 0.053, 0.06);
 
   state->game.font_size = 32;
   state->game.text = new char[256];
-
-  strcpy_s(state->game.text,
-           256,
-           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_=+");
 
   render_init(state);
 }
@@ -40,7 +36,7 @@ void render(app_state *state) {
   render_game(state);
   renderer_font font = asset_font_get_render(state, "default"_sid);
   render_font_reset(state, font);
-  render_text(state, font, state->game.font_size, {100, 100}, state->game.text);
+  //render_text(state, font, state->game.font_size, {100, 100}, state->game.text);
   render_font_finish(state, font);
 }
 
@@ -59,7 +55,7 @@ void draw_debug_info(app_state *state) {
   ImGui::DragFloat("Zoom", &state->game.camera.zoom, 0.1f, 0.01f, 100.f);
   ImGui::DragFloat2("Pos", (float *)&state->game.camera.pos);
 
-  ImGui::ColorEdit3("SunColor", (float *)&state->game.solar_system->star.color);
+  //ImGui::ColorEdit3("SunColor", (float *)&state->game.solar_system->star.color);
   ImGui::ColorEdit3("ClearColor", (float *)&state->game.renderer.clear_color);
 
   if (ImGui::CollapsingHeader("Bloom")) {

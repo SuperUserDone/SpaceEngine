@@ -211,12 +211,12 @@ void create_window(app_state *state) {
   ZoneScopedN("Create Window");
   win32_state *ws = (win32_state *)state->platform_state;
   ws->window =
-      SDL_CreateWindow("Space Game",
+      SDL_CreateWindow("GardenRun - FireworkEngine",
                        SDL_WINDOWPOS_UNDEFINED,
                        SDL_WINDOWPOS_UNDEFINED,
-                       800,
-                       600,
-                       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+                       512,
+                       512,
+                       SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
   ws->glcontext = SDL_GL_CreateContext(ws->window);
   SDL_GL_MakeCurrent(ws->window, ws->glcontext);
   SDL_GL_GetDrawableSize(ws->window, &state->window_area.w, &state->window_area.h);

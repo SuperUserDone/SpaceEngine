@@ -13,7 +13,6 @@ struct game_state {
     float zoom;
   } camera;
 
-  solar_system *solar_system;
   uint32_t font_size;
 
   char *text;
