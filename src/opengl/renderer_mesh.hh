@@ -29,6 +29,19 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
                  data->indicies,
                  GL_STREAM_DRAW);
   }
+
+  // Setup vertex attribs
+  {
+    glBindVertexArray(m->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m->vb);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, pos));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, uv));
+  }
+
+
 }
 
 static inline renderer_mesh create_mesh(mesh_data *data) {
@@ -46,17 +59,6 @@ static inline renderer_mesh create_mesh(mesh_data *data) {
   mesh.index = reinterpret_cast<size_t>(m);
 
   update_mesh(&mesh, data);
-
-  // Setup vertex attribs
-  {
-    glBindVertexArray(m->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m->vb);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, pos));
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, uv));
-  }
 
   return mesh;
 }

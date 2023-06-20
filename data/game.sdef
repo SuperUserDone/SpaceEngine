@@ -7,3 +7,13 @@
   frag "data/shaders/sol.frag.glsl"
   vert "data/shaders/default.vert.glsl"
   uniforms ["transform", "organic", "time", "sunColor", "raduis"]
+
+[pipeline] sprite 
+  frag "data/shaders/sprite.frag.glsl"
+  vert "data/shaders/default.vert.glsl"
+  uniforms ["transform", "atlas"]
+
+[texture] spritesheet 
+  upsample "NEAREST"
+  downsample "NEAREST"
+  path "data/textures/spritesheet.png"

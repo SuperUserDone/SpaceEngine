@@ -1,6 +1,10 @@
 #include "renderer/render_pass_geometry.hh"
 #include "assetmanager/assetmanager.hh"
+#include "code/scene_animation.hh"
+#include "code/scene_start.hh"
 #include "common/hash.hh"
+#include "code/scene_forest.hh"
+#include "code/scene_garden.hh"
 #include "tracy/Tracy.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -39,4 +43,19 @@ void render_pass_geometry(app_state *state) {
             state->game.solar_system->star.pos,
             state->game.solar_system->star.raduis,
             state->game.solar_system->star.color);*/
+
+  switch (state->game.gameplay.scene) {
+  case scene_type::GARDEN:
+    garden::scene_game_render(state);
+    break;
+  case scene_type::ZONE_ANIMATION:
+    anim::scene_game_render(state);
+    break;
+  case scene_type::FOREST:
+    forest::scene_game_render(state);
+    break;
+  case scene_type::START:
+    start::scene_game_render(state);
+    break;
+  }
 }

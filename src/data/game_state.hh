@@ -1,5 +1,6 @@
 #pragma once
 
+#include "code/game_data.hh"
 #include "data/asset_types.hh"
 #include "data/game_data.hh"
 #include <glm/glm.hpp>
@@ -11,9 +12,13 @@ struct game_state {
   struct {
     glm::vec2 pos;
     float zoom;
+    float shake;
+    float shake_falloff;
   } camera;
 
   uint32_t font_size;
+
+  game_data gameplay;
 
   char *text;
 
@@ -33,4 +38,6 @@ struct game_state {
     glm::vec3 clear_color;
 
   } renderer;
+
+  render_batch b;
 };

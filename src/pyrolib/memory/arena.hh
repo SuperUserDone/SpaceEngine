@@ -82,6 +82,14 @@ public:
     return push_cstring(cstr, strlen(cstr));
   }
 
+  template<typename... Args>
+  char *push_fmtstring(const char *fmt, Args... args) {
+    size_t len = snprintf(nullptr, 0, fmt, args...);
+    char *out = (char *)push(len + 1);
+    snprintf(out, len+1, fmt, args...);
+    return out;
+  }
+
   void clear() {
     m_size = 0;
   }
