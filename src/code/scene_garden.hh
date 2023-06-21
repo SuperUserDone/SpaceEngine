@@ -32,6 +32,7 @@ static inline void scene_tick(app_state *state) {
     state->game.gameplay.player_pos.x = 512 / state->game.camera.zoom - 32;
   if (state->game.gameplay.player_pos.y + 32 > 512 / state->game.camera.zoom)
     state->game.gameplay.player_pos.y = 512 / state->game.camera.zoom - 32;
+
 }
 
 static inline void scene_text_render(app_state *state) {
