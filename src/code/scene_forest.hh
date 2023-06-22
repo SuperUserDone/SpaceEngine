@@ -28,6 +28,7 @@ static inline void scene_tick(app_state *state) {
 static inline void scene_text_render(app_state *state) {
   renderer_font font = asset_font_get_render(state, "default"_sid);
   render_text(state, font, 24, {8, 32}, "Forest");
+
 }
 
 static inline void scene_game_render(app_state *state) {
