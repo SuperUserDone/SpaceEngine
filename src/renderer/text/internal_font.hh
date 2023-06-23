@@ -8,7 +8,7 @@ struct internal_font {
   FT_Face ft_face;
   void *font_face_data;
 
-  render_batch batch;
+  render::batch batch;
   texture_data glyph_data;
   glm::uvec2 glyph_data_offset;
   size_t row_height;

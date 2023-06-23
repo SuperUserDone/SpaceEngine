@@ -1,12 +1,12 @@
 #include "render_text.hh"
 #include "assetmanager/assetmanager.hh"
-#include "pyrolib/log/assert.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/glm_exts.hh"
 #include "internal_font.hh"
 #include "pyrolib/container/arena_vector.hh"
 #include "pyrolib/container/lru_cache.hh"
+#include "pyrolib/log/assert.hh"
 #include "pyrolib/memory/pool.hh"
 #include "renderer/render_batch.hh"
 #include "renderer/text/glyph_builder.hh"
@@ -52,11 +52,11 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
   memcpy(i_font->font_face_data, data->file_data, data->file_len);
 
   PYRO_ASSERT(!FT_New_Memory_Face(info->ft_lib,
-                                   (FT_Byte *)i_font->font_face_data,
-                                   data->file_len,
-                                   0,
-                                   &i_font->ft_face),
-               "Could not load face!");
+                                  (FT_Byte *)i_font->font_face_data,
+                                  data->file_len,
+                                  0,
+                                  &i_font->ft_face),
+              "Could not load face!");
   glyph_builder *builder = state->permanent_arena.push<glyph_builder>();
   builder->set_font(i_font);
 
@@ -80,7 +80,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
 
   i_font->tex_dirty = false;
 
-  i_font->batch = render_batch_create(state);
+  i_font->batch.lt_init(state);
 
   renderer_font font;
   font.index = (size_t)i_font;
@@ -110,9 +110,9 @@ void render_text_quit(app_state *state) {
   quit_ft(state);
 }
 
-void queue_rect(render_batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
+void queue_rect(render::batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
   rect r = {pos, size, uva, uvb};
-  render_batch_add_rect(batch, r);
+  batch.add_rect(r);
 }
 
 void render_text(app_state *state,
@@ -123,9 +123,9 @@ void render_text(app_state *state,
   ZoneScopedN("Queue Draw Text");
 
   PYRO_ASSERT(size >= FONT_SIZE_MIN && size <= FONT_SIZE_MAX,
-               "Font size must be between %d and %d!",
-               FONT_SIZE_MIN,
-               FONT_SIZE_MAX);
+              "Font size must be between %d and %d!",
+              FONT_SIZE_MIN,
+              FONT_SIZE_MAX);
 
   float dpi = state->window_area.dpi_scaling;
 
@@ -198,7 +198,7 @@ void render_text(app_state *state,
 
 void render_font_reset(app_state *state, renderer_font font) {
   internal_font *i_font = (internal_font *)font.index;
-  render_batch_reset(i_font->batch);
+  i_font->batch.clear();
   if (i_font->invalidate) {
     i_font->locations.clear();
     i_font->glyph_data_offset = {PADDING, PADDING};
@@ -240,7 +240,7 @@ void render_font_finish(app_state *state, renderer_font font) {
   pipeline_settings_set_uniform(settings, 0, mvp);
   pipeline_settings_set_uniform(settings, 1, i_font->glyph_texture);
 
-  render_batch_render(state, i_font->batch, p, settings);
+  i_font->batch.render(p, settings);
 }
 
 void render_font_delete(app_state *state, renderer_font font) {
@@ -254,7 +254,7 @@ void render_font_delete(app_state *state, renderer_font font) {
 
   FT_Done_Face(i_font->ft_face);
   state->api.renderer.delete_texture(i_font->glyph_texture);
-  render_batch_delete(state, i_font->batch);
+  i_font->batch.lt_done();
 
   delete[] (uint8_t *)i_font->font_face_data;
 }

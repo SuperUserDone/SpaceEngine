@@ -8,18 +8,27 @@
 #include "pyrolib/container/arena_vector.hh"
 #include "renderer/pipeline_settings.hh"
 
-struct render_batch {
-  renderer_mesh mesh;
+namespace render {
 
-  pyro::container::arena_vector<vertex> verticies;
-  pyro::container::arena_vector<uint32_t> indicies;
+class APIFUNC batch {
+public:
+  void lt_init(app_state *state, size_t max_verts = 8192);
+  void lt_done();
+
+  void clear();
+
+  void render(renderer_pipeline &pipeline, pipeline_settings &settings);
+  void add_rect(rect &rect);
+
+private:
+  renderer_mesh m_mesh;
+
+  pyro::container::arena_vector<vertex> m_verticies;
+  pyro::container::arena_vector<uint32_t> m_indicies;
+
+  app_state *m_state;
+
+  void update_mesh();
 };
 
-APIFUNC render_batch render_batch_create(app_state *state, size_t max_batch_size = 2048);
-APIFUNC void render_batch_reset(render_batch &batch);
-APIFUNC void render_batch_add_rect(render_batch &batch, rect &r);
-APIFUNC void render_batch_render(app_state *state,
-                                 render_batch &batch,
-                                 renderer_pipeline &pipeline,
-                                 pipeline_settings &settings);
-APIFUNC void render_batch_delete(app_state *state, render_batch &batch);
+} // namespace render

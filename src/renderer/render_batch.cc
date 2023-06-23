@@ -3,76 +3,73 @@
 #include "data/asset_types.hh"
 #include "renderer/render_batch.hh"
 
-render_batch render_batch_create(app_state *state, size_t max_batch_size) {
-  render_batch b;
+namespace render {
+void batch::lt_init(app_state *state, size_t max_verts) {
 
-  b.verticies.lt_init(max_batch_size * 4);
-  b.indicies.lt_init(max_batch_size * 6);
+  m_verticies.lt_init(max_verts * 4);
+  m_indicies.lt_init(max_verts * 6);
 
   mesh_data data;
-  data.index_count = b.indicies.size();
-  data.vertex_count = b.verticies.size();
+  data.index_count = m_indicies.size();
+  data.vertex_count = m_verticies.size();
 
-  data.indicies = &b.indicies[0];
-  data.verticies = &b.verticies[0];
+  data.indicies = &m_indicies[0];
+  data.verticies = &m_verticies[0];
 
-  b.mesh = state->api.renderer.create_mesh(&data);
-
-  return b;
+  m_mesh = state->api.renderer.create_mesh(&data);
+  m_state = state;
 }
 
-void render_batch_reset(render_batch &batch) {
-  batch.indicies.clear();
-  batch.verticies.clear();
+void batch::clear() {
+  m_indicies.clear();
+  m_verticies.clear();
 }
 
-void render_batch_add_rect(render_batch &batch, rect &r) {
+void batch::add_rect(rect &r) {
   // Don't draw if size == 0
   if (r.size == glm::vec2(0)) {
     return;
   }
 
-  size_t start = batch.verticies.size();
+  size_t start = m_verticies.size();
 
-  batch.verticies.push_back(vertex{r.pos, r.uva});
-  batch.verticies.push_back(
+  m_verticies.push_back(vertex{r.pos, r.uva});
+  m_verticies.push_back(
       vertex{glm::vec2(r.pos.x, r.pos.y + r.size.y), glm::vec2(r.uva.x, r.uvb.y)});
-  batch.verticies.push_back(vertex{glm::vec2(r.pos.x + r.size.x, r.pos.y + r.size.y), r.uvb});
-  batch.verticies.push_back(
+  m_verticies.push_back(vertex{glm::vec2(r.pos.x + r.size.x, r.pos.y + r.size.y), r.uvb});
+  m_verticies.push_back(
       vertex{glm::vec2(r.pos.x + r.size.x, r.pos.y), glm::vec2{r.uvb.x, r.uva.y}});
 
-  batch.indicies.push_back(start + 0);
-  batch.indicies.push_back(start + 1);
-  batch.indicies.push_back(start + 2);
-  batch.indicies.push_back(start + 0);
-  batch.indicies.push_back(start + 2);
-  batch.indicies.push_back(start + 3);
+  m_indicies.push_back(start + 0);
+  m_indicies.push_back(start + 1);
+  m_indicies.push_back(start + 2);
+  m_indicies.push_back(start + 0);
+  m_indicies.push_back(start + 2);
+  m_indicies.push_back(start + 3);
 }
-
-void update_gpu_mesh(app_state *state, render_batch &batch) {
+void batch::update_mesh() {
   mesh_data data;
-  data.index_count = batch.indicies.size();
-  data.vertex_count = batch.verticies.size();
+  data.index_count = m_indicies.size();
+  data.vertex_count = m_verticies.size();
 
-  data.indicies = &batch.indicies[0];
-  data.verticies = &batch.verticies[0];
+  data.indicies = &m_indicies[0];
+  data.verticies = &m_verticies[0];
 
-  state->api.renderer.update_mesh(&batch.mesh, &data);
+  m_state->api.renderer.update_mesh(&m_mesh, &data);
 }
 
-void render_batch_render(app_state *state,
-                         render_batch &batch,
-                         renderer_pipeline &pipeline,
-                         pipeline_settings &settings) {
-  update_gpu_mesh(state, batch);
+void batch::render(renderer_pipeline &pipeline, pipeline_settings &settings) {
+  update_mesh();
 
-  renderer_mesh *m = &batch.mesh;
+  renderer_mesh *m = &m_mesh;
   pipeline_settings *pp = &settings;
-  state->api.renderer.draw_meshes(1, &m, &pp, &pipeline);
+  m_state->api.renderer.draw_meshes(1, &m, &pp, &pipeline);
 }
 
-void render_batch_delete(app_state *state, render_batch &batch) {
-  state->api.renderer.delete_mesh(batch.mesh);
-  batch.indicies.lt_done();
-  batch.verticies.lt_done();
+void batch::lt_done() {
+  m_state->api.renderer.delete_mesh(m_mesh);
+  m_indicies.lt_done();
+  m_verticies.lt_done();
 }
+
+} // namespace render
