@@ -149,11 +149,8 @@ void run_game_loop(app_state *state) {
 
     // Delta time stuff
     {
-      state->time.dt = delta_timer.get_us() / 1000000.0;
+      state->time.dt = delta_timer.reset() / 1000000.0;
       state->time.t = time_timer.get_us() / 1000000.0;
-      if (state->time.t >= 1024) {
-        time_timer.reset();
-      }
 
       TracyPlot("Delta Time", state->time.dt);
       TracyPlot("Time", state->time.t);
