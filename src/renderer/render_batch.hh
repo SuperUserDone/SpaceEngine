@@ -28,6 +28,8 @@ private:
 
   app_state *m_state;
 
+  bool m_dirty;
+
   void update_mesh();
 };
 

@@ -18,11 +18,14 @@ void batch::lt_init(app_state *state, size_t max_verts) {
 
   m_mesh = state->api.renderer.create_mesh(&data);
   m_state = state;
+  m_dirty = false;
 }
 
 void batch::clear() {
   m_indicies.clear();
   m_verticies.clear();
+
+  m_dirty = false;
 }
 
 void batch::add_rect(rect &r) {
@@ -46,8 +49,13 @@ void batch::add_rect(rect &r) {
   m_indicies.push_back(start + 0);
   m_indicies.push_back(start + 2);
   m_indicies.push_back(start + 3);
+
+  m_dirty = true;
 }
 void batch::update_mesh() {
+  if(!m_dirty)
+    return;
+
   mesh_data data;
   data.index_count = m_indicies.size();
   data.vertex_count = m_verticies.size();
@@ -56,6 +64,8 @@ void batch::update_mesh() {
   data.verticies = &m_verticies[0];
 
   m_state->api.renderer.update_mesh(&m_mesh, &data);
+
+  m_dirty = false;
 }
 
 void batch::render(renderer_pipeline &pipeline, pipeline_settings &settings) {
