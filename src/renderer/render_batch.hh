@@ -28,7 +28,7 @@ private:
 
   app_state *m_state;
 
-  bool m_dirty;
+  size_t m_data_hash; 
 
   void update_mesh();
 };
