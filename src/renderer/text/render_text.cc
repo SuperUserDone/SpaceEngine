@@ -136,6 +136,7 @@ void render_text(app_state *state,
   internal_size_info new_size;
 
   if (i_size_it == i_font->size_lookup.end()) {
+    ZoneScopedN("Create new size");
     FT_New_Size(i_font->ft_face, &new_size.size);
     FT_Activate_Size(new_size.size);
     FT_Set_Pixel_Sizes(i_font->ft_face, 0, scaled_size);
@@ -151,7 +152,10 @@ void render_text(app_state *state,
   internal_size_info i_size = new_size;
 
   glm::vec2 current_pos = pos * dpi;
-  FT_Activate_Size(i_size.size);
+  {
+    ZoneScopedN("Set Freetype size");
+    FT_Activate_Size(i_size.size);
+  }
 
   {
     ZoneScopedN("Reset Buffer");

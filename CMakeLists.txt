@@ -55,14 +55,16 @@ add_executable(space WIN32 src/win32/win32_space.cc imgui/backends/imgui_impl_sd
 include_directories(tracy/public)
 if(${ENABLE_PROFILING})
   add_library(tracy SHARED tracy/public/TracyClient.cpp)
-  target_compile_definitions(tracy PRIVATE TRACY_EXPORTS TRACY_ENABLE)
-  set(ADD_DEFINES TRACY_IMPORTS TRACY_ENABLE)
+  set(TRACY_DEFINES TRACY_ENABLE TRACY_NO_CALLSTACK_INLINES)
+  target_compile_definitions(tracy PRIVATE TRACY_EXPORTS ${TRACY_DEFINES})
+  set(ADD_DEFINES TRACY_IMPORTS ${TRACY_DEFINES})
+  add_compile_definitions(${ADD_DEFINES})
   set(ADD_LINKS tracy)
 endif()
 
 target_link_libraries(space_common pyro glm::glm imgui Freetype::Freetype harfbuzz::harfbuzz ${ADD_LINKS})
 
-target_compile_definitions(space_common PRIVATE EXPORT_WIN PUBLIC ${ADD_DEFINES})
+target_compile_definitions(space_common PRIVATE EXPORT_WIN)
 target_compile_definitions(imgui PRIVATE "IMGUI_API=__declspec(dllexport)")
 
 target_link_libraries(space
