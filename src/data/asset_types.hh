@@ -5,6 +5,7 @@
 // opaque pointers to avoid a _possible_ cache miss when looking up the actual values we need. Might
 // not be neccacary though, I have not benchmarked it
 
+#include "pyrolib/math/math.hh"
 #include <glm/glm.hpp>
 #include <pyrolib/container/array.hh>
 #include <stdint.h>
@@ -51,17 +52,9 @@ struct renderer_mesh {
   uint32_t triangle_vertex_count;
 };
 
-struct vertex {
-  glm::vec2 pos;
-  glm::vec2 uv;
-};
-
 struct mesh_data {
-  vertex *verticies;
-  uint32_t *indicies;
-
-  size_t vertex_count;
-  size_t index_count;
+  pyro::container::array<pyro::vertex> verticies;
+  pyro::container::array<uint16_t> indicies;
 };
 
 struct pipeline_data {

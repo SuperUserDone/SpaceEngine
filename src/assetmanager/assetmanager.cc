@@ -44,23 +44,17 @@
     auto i = state->assets.name##_data.find(id);                                                   \
     if (i != state->assets.name##_data.end())                                                      \
       return result_ok(i->val);                                                                    \
-    return result_err<renderer_##name>("Could not find " #name " with id %s", id.string());           \
+    return result_err<renderer_##name>("Could not find " #name " with id %s", id.string());        \
   }
 
 static void init_default_assets(app_state *state) {
   // Quad
   {
     mesh_data m;
-    vertex v[] = {vertex{{0.f, 0.f}, {0.f, 0.f}},
-                  vertex{{1.f, 0.f}, {1.f, 0.f}},
-                  vertex{{1.f, 1.f}, {1.f, 1.f}},
-                  vertex{{0.f, 1.f}, {0.f, 1.f}}};
-    m.verticies = v;
-    uint32_t i[] = {0, 1, 2, 0, 2, 3};
-    m.indicies = i;
-
-    m.index_count = 6;
-    m.vertex_count = 4;
+    pyro::math::quad q({0.f, 0.f}, {1, 1}, {0.f, 0.f}, {1.f, 1.f});
+    m.verticies.lt_init(q.v, 4);
+    uint16_t i[] = {0, 1, 2, 0, 2, 3};
+    m.indicies.lt_init(i, 6);
 
     asset_mesh_create(state, "Quad"_sid, &m);
   }

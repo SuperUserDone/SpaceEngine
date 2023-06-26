@@ -11,11 +11,9 @@ void batch::lt_init(app_state *state, size_t max_verts) {
   m_indicies.lt_init(max_verts * 6);
 
   mesh_data data;
-  data.index_count = m_indicies.size();
-  data.vertex_count = m_verticies.size();
 
-  data.indicies = &m_indicies[0];
-  data.verticies = &m_verticies[0];
+  data.indicies.lt_ref(m_indicies);
+  data.verticies.lt_ref(m_verticies);
 
   m_mesh = state->api.renderer.create_mesh(&data);
   m_state = state;
@@ -28,21 +26,13 @@ void batch::clear() {
   m_verticies.clear();
 }
 
-void batch::add_rect(rect &r) {
+void batch::add_rect(pyro::math::quad &r) {
   ZoneScopedN("Batch add mesh");
   // Don't draw if size == 0
-  if (r.size == glm::vec2(0)) {
-    return;
-  }
 
   size_t start = m_verticies.size();
 
-  m_verticies.push_back(vertex{r.pos, r.uva});
-  m_verticies.push_back(
-      vertex{glm::vec2(r.pos.x, r.pos.y + r.size.y), glm::vec2(r.uva.x, r.uvb.y)});
-  m_verticies.push_back(vertex{glm::vec2(r.pos.x + r.size.x, r.pos.y + r.size.y), r.uvb});
-  m_verticies.push_back(
-      vertex{glm::vec2(r.pos.x + r.size.x, r.pos.y), glm::vec2{r.uvb.x, r.uva.y}});
+  m_verticies.insert_back(r.begin(), r.end());
 
   m_indicies.push_back(start + 0);
   m_indicies.push_back(start + 1);
@@ -56,7 +46,7 @@ void batch::update_mesh() {
 
   {
     ZoneScopedN("Compute hash");
-    size_t vhash = XXH3_64bits(&m_verticies[0], sizeof(vertex) * m_verticies.size());
+    size_t vhash = XXH3_64bits(&m_verticies[0], sizeof(pyro::vertex) * m_verticies.size());
     size_t ihash = XXH3_64bits(&m_indicies[0], sizeof(uint32_t) * m_indicies.size());
     size_t hash = vhash ^ ihash;
 
@@ -67,11 +57,9 @@ void batch::update_mesh() {
   }
 
   mesh_data data;
-  data.index_count = m_indicies.size();
-  data.vertex_count = m_verticies.size();
 
-  data.indicies = &m_indicies[0];
-  data.verticies = &m_verticies[0];
+  data.indicies.lt_ref(m_indicies);
+  data.verticies.lt_ref(m_verticies);
 
   m_state->api.renderer.update_mesh(&m_mesh, &data);
 }

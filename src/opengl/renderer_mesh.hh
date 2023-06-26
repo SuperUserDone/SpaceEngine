@@ -10,23 +10,23 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
   ZoneScopedN("Update GPU Mesh");
   internal_mesh *m = reinterpret_cast<internal_mesh *>(r->index);
 
-  r->triangle_vertex_count = data->index_count;
+  r->triangle_vertex_count = data->indicies.size();
 
-  if (data->index_count == 0 && data->vertex_count == 0)
+  if (data->indicies.size() == 0 || data->verticies.size() == 0)
     return;
 
   // Fill Buffers
   {
     glBindBuffer(GL_ARRAY_BUFFER, m->vb);
     glBufferData(GL_ARRAY_BUFFER,
-                 data->vertex_count * sizeof(vertex),
-                 data->verticies,
+                 data->verticies.size() * sizeof(decltype(data->verticies)::type),
+                 &data->verticies[0],
                  GL_STREAM_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 data->index_count * sizeof(uint32_t),
-                 data->indicies,
+                 data->indicies.size() * sizeof(decltype(data->indicies)::type),
+                 &data->indicies[0],
                  GL_STREAM_DRAW);
   }
 
@@ -37,8 +37,12 @@ static inline void update_mesh(renderer_mesh *r, mesh_data *data) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ib);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, pos));
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)offsetof(vertex, uv));
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(pyro::vertex), (void *)offsetof(pyro::vertex, pos));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(pyro::vertex), (void *)offsetof(pyro::vertex, normal));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(pyro::vertex), (void *)offsetof(pyro::vertex, tangent));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(pyro::vertex), (void *)offsetof(pyro::vertex, uv));
   }
 }
 

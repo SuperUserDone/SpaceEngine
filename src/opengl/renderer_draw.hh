@@ -56,7 +56,7 @@ inline static void draw_mesh(renderer_mesh *mesh) {
   internal_mesh *m = reinterpret_cast<internal_mesh *>(mesh->index);
   glBindVertexArray(m->vao);
 
-  glDrawElements(GL_TRIANGLES, mesh->triangle_vertex_count, GL_UNSIGNED_INT, 0);
+  glDrawElements(GL_TRIANGLES, mesh->triangle_vertex_count, GL_UNSIGNED_SHORT, 0);
 }
 
 inline static void render_meshes(size_t count,

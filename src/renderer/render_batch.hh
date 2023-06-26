@@ -4,7 +4,6 @@
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
 #include "data/game_state.hh"
-#include "data/glm_exts.hh"
 #include "pyrolib/container/arena_vector.hh"
 #include "renderer/pipeline_settings.hh"
 
@@ -18,13 +17,13 @@ public:
   void clear();
 
   void render(renderer_pipeline &pipeline, pipeline_settings &settings);
-  void add_rect(rect &rect);
+  void add_rect(pyro::math::quad &rect);
 
 private:
   renderer_mesh m_mesh;
 
-  pyro::container::arena_vector<vertex> m_verticies;
-  pyro::container::arena_vector<uint32_t> m_indicies;
+  pyro::container::arena_vector<pyro::vertex> m_verticies;
+  pyro::container::arena_vector<uint16_t> m_indicies;
 
   app_state *m_state;
 

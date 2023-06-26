@@ -39,6 +39,13 @@ public:
   }
 
   template <typename U>
+  void lt_ref(U &arr) {
+    static_assert(std::is_same<typename U::type, type>::value, "Incompatable array types!");
+    m_base = &arr[0];
+    m_size = arr.size();
+  }
+
+  template <typename U>
   void lt_copy_from(memory::arena &arena, const U &other) {
     static_assert(std::is_same<typename U::type, type>::value, "Incompatable array types!");
     lt_init(arena, other.size());

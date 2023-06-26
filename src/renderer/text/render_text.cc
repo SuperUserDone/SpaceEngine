@@ -2,7 +2,6 @@
 #include "assetmanager/assetmanager.hh"
 #include "data/app_state.hh"
 #include "data/asset_types.hh"
-#include "data/glm_exts.hh"
 #include "internal_font.hh"
 #include "pyrolib/container/arena_vector.hh"
 #include "pyrolib/container/lru_cache.hh"
@@ -111,7 +110,7 @@ void render_text_quit(app_state *state) {
 }
 
 void queue_rect(render::batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
-  rect r = {pos, size, uva, uvb};
+  pyro::math::quad r(pos, size, uva, uvb);
   batch.add_rect(r);
 }
 
