@@ -28,7 +28,6 @@ void batch::clear() {
 
 void batch::add_rect(pyro::math::quad &r) {
   ZoneScopedN("Batch add mesh");
-  // Don't draw if size == 0
 
   size_t start = m_verticies.size();
 

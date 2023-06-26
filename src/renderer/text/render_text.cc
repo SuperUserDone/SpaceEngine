@@ -110,6 +110,9 @@ void render_text_quit(app_state *state) {
 }
 
 void queue_rect(render::batch &batch, glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
+  // Dont add if size = 0
+  if(size == glm::vec2(0.f)) 
+    return;
   pyro::math::quad r(pos, size, uva, uvb);
   batch.add_rect(r);
 }
