@@ -25,9 +25,9 @@ struct quad {
 
   quad(glm::vec2 pos, glm::vec2 size, glm::vec2 uva, glm::vec2 uvb) {
     v[0] = {{pos.x, pos.y, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, uva};
-    v[1] = {{pos.x + size.x, pos.y, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, {uvb.x, uva.y}};
-    v[2] = {glm::vec3(pos + size, 0.f), {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, uvb};
     v[3] = {{pos.x, pos.y + size.y, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, {uva.x, uvb.y}};
+    v[2] = {glm::vec3(pos + size, 0.f), {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, uvb};
+    v[1] = {{pos.x + size.x, pos.y, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}, {uvb.x, uva.y}};
   }
 
   itterator begin() {
