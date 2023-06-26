@@ -9,6 +9,9 @@ namespace container {
 template <typename T>
 class array {
 public:
+  typedef T type;
+  typedef array<T> this_type;
+
   void lt_init(T *base, size_t size) {
     m_base = base;
     m_size = size;
@@ -37,6 +40,7 @@ public:
 
   template <typename U>
   void lt_copy_from(memory::arena &arena, const U &other) {
+    static_assert(std::is_same<typename U::type, type>::value, "Incompatable array types!");
     lt_init(arena, other.size());
     memcpy(m_base, &other[0], other.size() * sizeof(T));
   }

@@ -8,6 +8,9 @@ namespace container {
 
 template <typename T>
 class heap_vector : basic_vector<T> {
+  typedef T type;
+  typedef heap_vector<T> this_type;
+
   void lt_init(size_t prealloc_size = 32) {
     this->m_base = static_cast<T *>(malloc(prealloc_size * sizeof(T)));
     m_size_alloc = prealloc_size;
@@ -22,7 +25,6 @@ class heap_vector : basic_vector<T> {
       T *new_ptr = realloc(this->m_base, size);
     }
   }
-
 
 public:
   size_t m_size_alloc;

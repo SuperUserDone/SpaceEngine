@@ -10,6 +10,9 @@ namespace container {
 template <typename T>
 class arena_vector : public basic_vector<T> {
 public:
+  typedef T type;
+  typedef arena_vector<T> this_type;
+
   void lt_init(size_t max_size = 4096) {
     arena.lt_init(max_size * sizeof(T));
     this->m_base = static_cast<T *>(arena.get_base());
