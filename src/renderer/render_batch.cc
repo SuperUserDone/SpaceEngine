@@ -46,8 +46,8 @@ void batch::update_mesh() {
 
   {
     ZoneScopedN("Compute hash");
-    size_t vhash = XXH3_64bits(&m_verticies[0], sizeof(pyro::vertex) * m_verticies.size());
-    size_t ihash = XXH3_64bits(&m_indicies[0], sizeof(uint32_t) * m_indicies.size());
+    size_t vhash = XXH3_64bits(&m_verticies[0], sizeof(decltype(m_verticies)::type) * m_verticies.size());
+    size_t ihash = XXH3_64bits(&m_indicies[0], sizeof(decltype(m_indicies)::type) * m_indicies.size());
     size_t hash = vhash ^ ihash;
 
     if (m_data_hash == hash)
