@@ -19,8 +19,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(src imgui extern)
-
-add_subdirectory(src/pyrolib)
 include_directories(src/pyrolib/extern)
 
 add_library(imgui SHARED
@@ -62,6 +60,7 @@ if(${ENABLE_PROFILING})
   set(ADD_LINKS tracy)
 endif()
 
+add_subdirectory(src/pyrolib)
 target_link_libraries(space_common pyro glm::glm imgui Freetype::Freetype harfbuzz::harfbuzz ${ADD_LINKS})
 
 target_compile_definitions(space_common PRIVATE EXPORT_WIN)

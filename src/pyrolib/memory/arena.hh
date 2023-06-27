@@ -2,6 +2,7 @@
 
 #include "pyrolib/log/assert.hh"
 #include "pyrolib/log/log.hh"
+#include "pyrolib/threading/spinlock.hh"
 #include "pyrolib/utils/api.hh"
 #include <atomic>
 #include <string.h>
@@ -32,7 +33,13 @@ class PYROAPI arena {
 public:
   void lt_init(size_t max_size = DEFAULT_ARENA_MAX_SIZE);
   void lt_done();
-  void grow(size_t min_size);
+  void grow(size_t min_size) {
+    // Check if we really need to grow the arena
+    if (min_size < m_allocated_size)
+      return;
+
+    grow_impl(min_size);
+  }
 
   void pop(size_t size) {
     PYRO_ASSERT(size < m_size, "Trying to free more space in arena than available!");
@@ -86,6 +93,10 @@ public:
     m_size = 0;
   }
 
+  size_t get_size() {
+    return m_size.load();
+  }
+
   arena_state get_state() {
     return {m_size};
   }
@@ -106,7 +117,7 @@ public:
     this->m_size = other.m_size.load();
     this->m_allocated_size = other.m_allocated_size;
     this->m_max_size = other.m_max_size;
-    this->m_grow_semaphore = other.m_grow_semaphore.load();
+    // this->m_grow_lock = other.m_grow_lock;
 
     other.m_base = nullptr;
     return *this;
@@ -122,6 +133,7 @@ public:
   }
 
 private:
+  void grow_impl(size_t size);
   void *m_base = nullptr;
 
   std::atomic_size_t m_size;
@@ -129,7 +141,7 @@ private:
 
   size_t m_max_size;
 
-  std::atomic_bool m_grow_semaphore;
+  threading::spinlock m_grow_lock;
 };
 
 } // namespace memory

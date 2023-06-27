@@ -39,9 +39,13 @@ public:
         "Type needs to be the same!");
     arena.grow((this->m_size + (end - start)) * sizeof(T));
 
-    for (U i = start; i < end; i++) {
+    for (U &i = start; i < end; i++) {
       this->m_base[this->m_size++] = *i;
     }
+  }
+
+  void reserve(size_t count) {
+    arena.grow((this->m_size + count) * sizeof(T));
   }
 
   void pop_back() {

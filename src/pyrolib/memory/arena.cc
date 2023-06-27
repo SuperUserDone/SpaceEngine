@@ -1,4 +1,5 @@
 #include "arena.hh"
+#include "tracy/Tracy.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -14,7 +15,6 @@ static size_t page_size = 0x0;
 void arena::lt_init(size_t max_size) {
   m_base = nullptr;
   m_size = 0;
-  m_grow_semaphore = false;
 
   // We need to keep track of the system page size so lazy-initialize it if it is not already
   // initialized
@@ -40,20 +40,11 @@ void arena::lt_init(size_t max_size) {
   grow(page_size);
 }
 
-void arena::grow(size_t min_size) {
+void arena::grow_impl(size_t min_size) {
+  ZoneScopedN("Arena Grow");
   // Round the size to the next page size
   size_t alloc = ((min_size + page_size - 1) / page_size) * (page_size);
-
-  // Check if we really need to grow the arena
-  if (alloc < m_allocated_size)
-    return;
-
-  // Spin until all growth opperations are completed in other threads
-  while (m_grow_semaphore.load())
-    _mm_pause();
-
-  // Might be a bug here, should be a compare and exchange? Maybe we can force ordering with a flag?
-  m_grow_semaphore.store(true);
+  m_grow_lock.lock();
 
   PYRO_ASSERT(alloc <= m_max_size, "Tried to grow arena beyond its capacity!");
 
@@ -64,7 +55,7 @@ void arena::grow(size_t min_size) {
 
   PYRO_ASSERT(a, "Failed to commit arena memory!")
 
-  m_grow_semaphore.store(false);
+  m_grow_lock.unlock();
 }
 
 void arena::lt_done() {
@@ -74,7 +65,6 @@ void arena::lt_done() {
   m_size = 0;
   m_allocated_size = 0;
   m_max_size = 0;
-  m_grow_semaphore = false;
 }
 }
 } // namespace pyro

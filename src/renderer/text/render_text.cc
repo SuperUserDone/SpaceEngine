@@ -79,7 +79,7 @@ APIFUNC extern renderer_font render_font_create(app_state *state, font_data *dat
 
   i_font->tex_dirty = false;
 
-  i_font->batch.lt_init(state);
+  i_font->batch.lt_init(state, 65536);
 
   renderer_font font;
   font.index = (size_t)i_font;
@@ -180,6 +180,8 @@ void render_text(app_state *state,
     uint32_t len = hb_buffer_get_length(i_size.hb_buffer);
     hb_glyph_info_t *buffer_info = hb_buffer_get_glyph_infos(i_size.hb_buffer, NULL);
     hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(i_size.hb_buffer, NULL);
+
+    i_font->batch.reserve_rects(len);
 
     for (size_t i = 0; i < len; i++) {
       uint32_t cp = buffer_info[i].codepoint;

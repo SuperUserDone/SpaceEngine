@@ -77,7 +77,8 @@ void draw_debug_info(app_state *state) {
     int font_size = state->game.font_size;
     ImGui::SliderInt("Font size", &font_size, 1, 100);
     state->game.font_size = font_size;
-    render_font_info info = render_font_get_info(state, asset_font_get_render(state, "default"_sid));
+    render_font_info info =
+        render_font_get_info(state, asset_font_get_render(state, "default"_sid));
     ImGui::Image((void *)(size_t)info.texture.index, {256, 256});
 
     ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}",

@@ -19,6 +19,8 @@ public:
   void render(renderer_pipeline &pipeline, pipeline_settings &settings);
   void add_rect(pyro::math::quad &rect);
 
+  void reserve_rects(size_t count);
+
 private:
   renderer_mesh m_mesh;
 
