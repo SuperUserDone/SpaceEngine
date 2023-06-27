@@ -88,9 +88,26 @@ void draw_debug_info(app_state *state) {
                 info.atlas_size.y);
   }
   if (ImGui::CollapsingHeader("Assets")) {
-    /*for (auto &i : state->assets.) {
-      ImGui::Text("%s\n", i.key);
-    }*/
+    ImGui::SeparatorText("Fonts");
+    for (auto &i : state->assets.font_data) {
+      ImGui::Text("%s\n", i.key.string());
+    }
+    ImGui::SeparatorText("Textures");
+    for (auto &i : state->assets.texture_data) {
+      ImGui::Text("%s\n", i.key.string());
+    }
+    ImGui::SeparatorText("Framebuffers");
+    for (auto &i : state->assets.framebuffer_data) {
+      ImGui::Text("%s\n", i.key.string());
+    }
+    ImGui::SeparatorText("Meshes");
+    for (auto &i : state->assets.mesh_data) {
+      ImGui::Text("%s\n", i.key.string());
+    }
+    ImGui::SeparatorText("Pipelines");
+    for (auto &i : state->assets.pipeline_data) {
+      ImGui::Text("%s\n", i.key.string());
+    }
   }
 
   input::debug_ui(state);
