@@ -77,15 +77,31 @@ void draw_debug_info(app_state *state) {
     int font_size = state->game.font_size;
     ImGui::SliderInt("Font size", &font_size, 1, 100);
     state->game.font_size = font_size;
-    render_font_info info =
-        render_font_get_info(state, asset_font_get_render(state, "default"_sid));
-    ImGui::Image((void *)(size_t)info.texture.index, {256, 256});
 
-    ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}",
-                info.cache_entries,
-                info.ht_entries,
-                info.atlas_size.x,
-                info.atlas_size.y);
+    static const char *font_name = nullptr;
+
+    if (ImGui::BeginCombo("Font Name", font_name)) {
+      for (auto &i : state->assets.font_data) {
+        if (ImGui::Selectable(i.key.string())) {
+          font_name = i.key.string();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    if (font_name) {
+      render_font_info info =
+          render_font_get_info(state,
+                               asset_font_get_render(state, pyro::container::string_id(font_name)));
+
+      ImGui::Image((void *)(size_t)info.texture.index, {256, 256});
+
+      ImGui::Text("CacheEntries %llu, HTEntries %llu, atlas_size = {%u, %u}",
+                  info.cache_entries,
+                  info.ht_entries,
+                  info.atlas_size.x,
+                  info.atlas_size.y);
+    }
   }
   if (ImGui::CollapsingHeader("Assets")) {
     ImGui::SeparatorText("Fonts");
